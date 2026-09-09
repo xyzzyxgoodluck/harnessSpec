@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  本样例依据 springboot/AGENTS.md（类型规范）装配：
+  - Spring 系依赖版本由 Boot BOM 管理（parent=spring-boot-starter-parent）
+  - MyBatis-Plus 不在 Boot BOM：版本在 <properties> 独立声明（mybatis-plus-spring-boot3-starter）
+  - springdoc（Swagger UI）同理独立声明（Boot 3 用 2.x）
+  注：Boot 3.5.0 为"已知存在"的基线版本；L3 冒烟时按官方现状升级到最新 3.5.x 补丁并回填（见 README「验证状态」）。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.0</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example</groupId>
+  <artifactId>sample</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>sample</name>
+  <description>springboot 类型合规样例（用于验证类型 harness 规则）</description>
+
+  <properties>
+    <java.version>17</java.version>
+    <!-- 独立于 Boot BOM 的组件版本（见 AGENTS.md「版本陷阱」） -->
+    <mybatis-plus.version>3.5.17</mybatis-plus.version>
+    <springdoc.version>2.8.13</springdoc.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-amqp</artifactId>
+    </dependency>
+
+    <!-- MyBatis-Plus：Boot 3 对应 starter（com.baomidou，版本独立声明） -->
+    <dependency>
+      <groupId>com.baomidou</groupId>
+      <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+      <version>${mybatis-plus.version}</version>
+    </dependency>
+    <!-- MySQL 驱动：版本由 Boot BOM 管理，勿手改 -->
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- Swagger UI（springdoc）：Boot 3 用 2.x -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

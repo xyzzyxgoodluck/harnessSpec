@@ -1,0 +1,18 @@
+# 构建产物
+target/
+*.jar
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 本地环境与密钥
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# 临时目录（脚本生成的中间物）
+.tmp-*/
