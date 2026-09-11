@@ -25,21 +25,22 @@
 
 ## 3. 分层职责与包结构
 
-包结构按功能域或分层组织，**二选一并全库统一**（示例采用 feature 优先 + 固定技术层子包）：
+包结构以类型 `AGENTS.md`「目录结构与架构」的目录树为**唯一描述**（本类型默认**分层**）：
 
 ```text
 com.{{company}}.{{product}}
-  order/
-    OrderController.java     # 仅 HTTP 适配：参数校验、调用 Service、返回 DTO
-    OrderService.java        # 用例编排、事务边界、业务规则
-    OrderMapper.java         # MyBatis-Plus Mapper（继承 BaseMapper / 自定义 SQL）
-    Order.java               # entity：与表 t_order 对应（@TableName）
-    OrderDTO.java            # 入参/出参 DTO
-    OrderMQListener.java     # RabbitMQ 消费者（@RabbitListener），仅做消息适配
-  common/                    # 跨域共享：异常（BizException/ErrorCode）、Result、分页、常量、幂等工具
-  dict/                      # 基础字典（元数据字典表）：DictType/DictItem、DictMapper、DictController
-  config/                    # 配置类：分页插件、Redis、RabbitMQ、序列化、线程池
+  controller/                # 仅 HTTP 适配：参数校验、调用 Service、返回 DTO
+  service/                   # 用例编排、事务边界、业务规则（接口）
+  service/impl/              # 实现类（XxxServiceImpl）
+  mapper/                    # MyBatis-Plus Mapper（BaseMapper / 自定义 SQL）；条件构造器只在此包
+  entity/                    # 与表对应的实体（@TableName）
+  dto/                       # 入参/出参 DTO（*Request/*Query/*Response）
+  config/                    # 分页插件、Redis、RabbitMQ、序列化、线程池配置
+  common/                    # 跨域共享：BizException/ErrorCode、Result/PageResult、常量、幂等工具
+  listener/                  # RabbitMQ 消费者（@RabbitListener），仅做消息适配
 ```
+
+> 字典功能（`DictController`/`DictService`/`DictMapper`/`DictItem` 等）按上列分层落点，**不另开 `dict/` 包**。若团队改用 **feature 优先**（`order/` 域内再分层），必须全库统一，并在 `ARCHITECTURE.md` §3 与 `AGENTS.md` 目录树**同步**——三处不得各说一套。
 
 - **必须**：Controller 薄——不做业务判断、不写 SQL/事务、不直接操作 Mapper；Service 承载业务规则与事务；Mapper 只做数据访问。
 - **必须**：entity 只做表映射（`@TableName`、`@TableId`、`@TableLogic`、`@Version` 等），**不含业务方法**，**禁止直接作为出参**暴露给外部（用 DTO，见第 4 节）。
@@ -50,8 +51,8 @@ com.{{company}}.{{product}}
 | 组件 | 命名 | 说明 |
 | --- | --- | --- |
 | Controller | `OrderController` | 薄；方法=用例动词：`createOrder`/`getOrderById`/`updateOrder`/`cancelOrder`/`pageOrders`；REST 路径资源复数 `/orders` |
-| Service 接口 | `OrderService` | MP 体系可 `extends IService<Order>`；方法同用例动词；事务边界所在 |
-| Service 实现 | `OrderServiceImpl` | 默认 `extends ServiceImpl<OrderMapper, Order> implements OrderService` |
+| Service 接口 | `OrderService` | **只声明本域用例方法**（同用例动词），不继承 MP 通用 service 接口；事务边界所在 |
+| Service 实现 | `OrderServiceImpl` | 可选 `extends CrudRepository<OrderMapper, Order> implements OrderService`（`com.baomidou.mybatisplus.spring.repository.CrudRepository`，泛型 `CrudRepository<M extends BaseMapper<T>, T>`）；官方自 MP **3.5.9 起不再建议 `IService`**，旧写法 `extends IService<Order>` 已弃用 |
 | Mapper（DAO） | `OrderMapper extends BaseMapper<Order>` | 同名 XML `OrderMapper.xml`；自定义方法 `selectOrderList`/`countXxx`/`updateXxxStatus`（动词+宾语） |
 | Entity | `Order`（表 `t_order`，`@TableName` 显式） | 纯数据载体，见第 3/5 节 |
 | 入参对象 | `OrderCreateRequest`/`OrderUpdateRequest`/`OrderPageQuery` | 分组校验用 `groups` |
@@ -91,7 +92,7 @@ Mapper 自定义方法名**必须**以统一 SQL 动词开头，与 Service 层�
   1. **下沉**：多个 Service 复用的无状态能力下沉到 `common/`（工具、常量、上下文、门面），各业务 Service 只依赖 common，彼此不互依赖；
   2. **事件解耦**：跨域最终一致的协作发 RabbitMQ 事件（见第 8 节），如订单发 `order.created`、库存监听处理——不要为协作而同步互相调用；
   3. **显式编排**：确需同步编排多个领域的用例，用独立编排服务 `XxxFlowService`（命名含 `Flow`/`Orchestration`，是**唯一**允许依赖多个领域 Service 的上层组件）；领域 Service **禁止**反向依赖编排服务。
-- **应该**：用 ArchUnit（`archunit-junit5`）写架构测试固化本约束——分层依赖、禁止反向/越层/横向，并断言 `cycles().should().beFree()`；纳入 `./mvnw verify`（见第 13 节），实现"依赖方向违规即构建失败"。
+- **应该**：用 ArchUnit（`archunit-junit5`）写架构测试固化本约束——分层依赖、禁止反向/越层/横向，并断言 `cycles().should().beFree()`；纳入 `./mvnw verify`（见第 13 节），实现"依赖方向违规即构建失败"。**规则必须带 `because("…")` 说明修法**（指向本节与 `docs/design-docs/core-beliefs.md` 的信条编号），让失败消息直接告诉 agent **改哪里**，而不是只说"违反了哪条规则"。
 
 ## 4. DTO / 参数校验 / API
 
@@ -115,9 +116,9 @@ Mapper 自定义方法名**必须**以统一 SQL 动词开头，与 Service 层�
 ### MyBatis-Plus
 
 - **必须**：单表简单 CRUD 走 `BaseMapper` 的主键/实体级方法（`selectById`/`insert`/`updateById`/`deleteById`）；**条件构造器（`QueryWrapper`/`LambdaQueryWrapper`/`UpdateWrapper` 等）只允许出现在 `mapper/` 包内**，Service/Controller 禁止 import 与使用；条件查询一律定义为 Mapper 自定义方法（参数用查询对象 `XxxQuery`/`XxxPageQuery`），条件在方法/XML 内拼装；复杂/多表查询手写 SQL，XML 集中放 `src/main/resources/mapper/*.xml`。
-- **必须**：采用 MP `IService`/`ServiceImpl` 体系时，只使用其主键/实体级方法（`getById`/`saveBatch`/`updateById`/`removeById` 等），**不调用** `list(wrapper)`/`page(wrapper)` 等条件构造器重载；此类场景改走自定义 Mapper 方法。
+- **必须**：采用 MP `CrudRepository` 通用 CRUD 抽象（`com.baomidou.mybatisplus.spring.repository.CrudRepository`）时，只使用其主键/实体级方法（`getById`/`saveBatch`/`updateById`/`removeById` 等），**不调用** `list(wrapper)`/`page(wrapper)` 等条件构造器重载；此类场景改走自定义 Mapper 方法。官方自 3.5.9 起不再建议 `IService`/`ServiceImpl`；历史代码若保留该体系，3.5.17 起包名为 `com.baomidou.mybatisplus.spring.service.*`（旧 `com.baomidou.mybatisplus.extension.service.*` 已不存在），**禁止**照抄旧 import。
 - **应该**：用 ArchUnit 固化——断言 `service`/`controller` 包不依赖 `com.baomidou.mybatisplus.core.conditions..`（见 §3「依赖方向约束」与第 13 节）。
-- **必须**：分页经分页插件（`PaginationInnerInterceptor`，注册于 `config/`）；列表/分页必须有上限，**禁止**无 LIMIT 的"全表捞内存"式查询。
+- **必须**：分页经分页插件（`PaginationInnerInterceptor`，注册于 `config/`）；该插件属 `mybatis-plus-jsqlparser` 模块——MP 3.5.9 起从主包**拆出且默认不携带**，pom **必须**显式引入 `com.baomidou:mybatis-plus-jsqlparser`（版本与 MyBatis-Plus 同号，不在 Boot BOM，版本基线见 `ARCHITECTURE.md` §2），漏加则分页插件无法编译/生效；列表/分页必须有上限，**禁止**无 LIMIT 的"全表捞内存"式查询。
 - **必须**：查询列显式（`select(...)` 或 XML 写列），**禁止**无条件 `SELECT *`（含 `selectPage` 默认全列的场景按需裁剪）。
 - **应该**：逻辑删除（`@TableLogic`）、乐观锁（`@Version`）、主键策略（雪花/自增）全库统一并在 `ARCHITECTURE.md` 声明；依赖 MP 自动填充（`@TableField(fill=...)`）处理 `create_time/update_time` 等审计字段。
 - **应该**：命名映射——表/字段 `snake_case`（审计字段固定 `create_time`/`update_time`、逻辑删除 `deleted`、版本 `version`，Java 端对应 `camelCase`）；开启 MP 驼峰自动映射或经 `@TableField` 显式标注；表名是否带 `t_` 前缀全库一致并在 `@TableName` 显式声明。
@@ -215,7 +216,7 @@ Mapper 自定义方法名**必须**以统一 SQL 动词开头，与 Service 层�
 ## 11. 配置管理
 
 - **必须**：配置按 Profile 拆分 `application.yml` + `application-{profile}.yml`；本地默认 `dev`（`SPRING_PROFILES_ACTIVE` 或启动参数）。
-- **应该**：springdoc（Swagger UI）按 Profile 开关——`dev`/`test` 启用、`prod` 关闭（`springdoc.api-docs.enabled=false`）或由网关白名单控制；`springdoc.swagger-ui.path` 如有定制需在 `ARCHITECTURE.md`/README 声明。
+- **应该**：springdoc（Swagger UI）按 Profile 开关——`dev`/`test` 启用、`prod` 关闭（`springdoc.api-docs.enabled=false`）或由网关白名单控制；`springdoc.swagger-ui.path` 一经定制**必须**在 `ARCHITECTURE.md` 与项目 README 同步声明。
 - **必须**：数据源、Redis、RabbitMQ 的连接配置统一以环境变量注入（`${DB_PASSWORD}` 形式），**密钥/口令禁止入库**。
 - **应该**：成组业务配置用 `@ConfigurationProperties` 类型化绑定（`@Validated` 启用校验），不散落 `@Value`；MyBatis-Plus 相关配置（逻辑删除、分页、乐观锁）集中在 `config/` 且注释说明。
 - **禁止**：不同环境互相拷贝后忘改的"环境泄漏"配置——环境差异集中在少量文件并用占位符。
@@ -253,7 +254,14 @@ Mapper 自定义方法名**必须**以统一 SQL 动词开头，与 Service 层�
 | `org.apache.maven.plugins:maven-checkstyle-plugin` | `checkstyle:check` | 风格/命名/禁止项（System.out、魔法数字等） | 规则 XML `config/checkstyle/checkstyle.xml`，以 Google Java Style 为基底 + 团队补充 |
 | `com.github.spotbugs:spotbugs-maven-plugin` | `spotbugs:check` | 缺陷模式（空指针、资源未关、并发等） | `effort=Max`；`excludeFilter.xml` 排除生成代码/已知无害项 |
 | `org.apache.maven.plugins:maven-enforcer-plugin` | `enforce` | Java 版本、依赖收敛、禁 SNAPSHOT | `requireJavaVersion`、`dependencyConvergence`、`bannedDependencies` |
-| `org.jacoco:jacoco-maven-plugin` | `prepare-agent` + `check` | 行覆盖率门禁 | 阈值 {{如 LINE ≥ 80%}}；排除 entity/mapper/config/生成代码，按实际包调整 |
+| `org.jacoco:jacoco-maven-plugin` | `prepare-agent` + `check` | 行覆盖率门禁 | 阈值 {{LINE ≥ 80%（样例已按此标准达标）}}；排除 entity/mapper/config/启动类，按实际包调整 |
+
+> **必须（规则真的拦得住）**：Checkstyle 的 checker 内 `severity=warning` 必须配合 pom 的 `<violationSeverity>warning</violationSeverity>`——否则团队规则只打印 `[WARN]` 而**不拦构建**（"You have 0 Checkstyle violations" 会是假绿）。每条「必须」规则的强制手段（工具/测试/仅评审）登记在模板仓库 `docs/enforcement-map.md`（项目内可自建同名登记表），新增规则时同步登记。
+
+**已验证的实现坑（照此实现，避免重踩）**：
+
+1. **团队 Checkstyle 规则"按包限定"不要用 `MatchXpath`**：Checkstyle 9.3 在本栈不可用——挂 Checker 报 `MatchXpath is not allowed as a child in Checker`；挂 TreeWalker 后 JAXP 对 `DetailAST` 包装节点一律抛 `Operation is not supported`（连 `//CLASS_DEF` 这类最简查询都失败，`ancestor::` 轴同样不支持）。**可行做法**：TreeWalker 内用 `RegexpSinglelineJava` 写规则 + Checker 级 `SuppressionSingleFilter` 按**文件路径**排除，达到"限定包"的效果（例：DAO 方法前缀规则只作用于 `mapper/**`，Service 层的 `get`/`find` 动词不被误伤）；改完必须用探针验证"该拦的拦、不该拦的不报"。若将来升到 Checkstyle 10.x（XPath 实现更全）可换成包名限定的 XPath，语义等价但更精确。
+2. **中文 Javadoc 必须设 `SummaryJavadoc.period = 。`**：Google 默认只认 ASCII `.`，不设会把中文首句**整体**误判为"缺结束符"（实测 27 处误报）；设为全角「。」后误报归零，且规则仍能拦住"首句无句号"。这是**本地化**而非放宽规则——若坚持 Google 原样，就必须把中文首句句号改成 `.`（与团队"中文 Javadoc 以句号结尾"的约定冲突，需记 ADR 取舍）。
 
 可选扩展（不默认引入，确有需要再配）：`maven-pmd-plugin`（含 Alibaba P3C 规则集，中文团队常用）、`com.tngtech.archunit:archunit-junit5`（架构测试：分层依赖方向、无环、QueryWrapper 隔离、DAO 前缀，见 §3/§5——建议接入并纳入 `verify`）、`org.sonarsource.scanner.maven:sonar-maven-plugin`（接 SonarQube，需服务器）。
 

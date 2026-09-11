@@ -1,4 +1,8 @@
 HELP.md
+
+### 本地环境变量（DB_PASSWORD/RABBITMQ_PASSWORD 等，禁止入库）###
+.env
+
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

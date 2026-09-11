@@ -6,6 +6,9 @@ services:
       MYSQL_DATABASE: sample
     ports:
       - "3306:3306"
+    # 表结构随容器首次初始化执行 db/V1__init.sql（版本化脚本；已应用脚本不改，只追加新脚本）
+    volumes:
+      - ./src/main/resources/db:/docker-entrypoint-initdb.d:ro
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]

@@ -1,28 +1,49 @@
+# 公共配置（所有 Profile 共享）；环境差异一律放 application-{profile}.yml。
+# 密钥/口令只从环境变量注入，禁止写入本文件或提交到仓库（CODING_STANDARDS §11）。
 spring:
   application:
     name: sample
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
-    url: jdbc:mysql://localhost:3306/sample?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
-    username: root
-    password: ${DB_PASSWORD:root}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:sample}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    # 生产端确认（CODING_STANDARDS §8）
     publisher-confirm-type: correlated
+    listener:
+      simple:
+        # 手动 ack：由 OrderMqListener 明确 basicAck/basicNack（§8 "禁吞异常不 ack"）
+        acknowledge-mode: manual
+        # 拒绝不重回原队列 → 经 DLX 进 DLQ，避免死循环刷日志
+        default-requeue-rejected: false
+        # 有限重试（与监听器内的显式重试共同构成上限）
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+    # 枚举状态机落库为字符串 code（OrderStatus 的 @EnumValue，CODING_STANDARDS §5）
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     banner: false
     db-config:
+      id-type: assign_id
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
@@ -31,8 +52,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+logging:
+  # traceId 由 TraceIdFilter/MQ 消费写入 MDC，与错误响应同源（CODING_STANDARDS §9）
+  pattern:
+    level: "%5p [traceId:%X{traceId:-}]"

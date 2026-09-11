@@ -3,8 +3,14 @@
   本样例依据 springboot/AGENTS.md（类型规范）装配：
   - Spring 系依赖版本由 Boot BOM 管理（parent=spring-boot-starter-parent）
   - MyBatis-Plus 不在 Boot BOM：版本在 <properties> 独立声明（mybatis-plus-spring-boot3-starter）
+    * 需要分页等 jsqlparser 插件时，必须另加 mybatis-plus-jsqlparser（MP 3.5.9 起拆包，默认不携带）
+    * 通用 CRUD 抽象用 CrudRepository（官方自 3.5.9 起不再建议 IService）
   - springdoc（Swagger UI）同理独立声明（Boot 3 用 2.x）
-  注：Boot 3.5.0 为"已知存在"的基线版本；L3 冒烟时按官方现状升级到最新 3.5.x 补丁并回填（见 README「验证状态」）。
+  - 质量门插件固定集（AGENTS「测试与质量门」/ CODING_STANDARDS §13）绑定 verify：
+    spotless / checkstyle（团队规则 config/checkstyle/checkstyle.xml）/ spotbugs（effort=Max）
+    / enforcer / jacoco（report + check LINE≥60%）；ArchUnit 架构测试随 test 执行
+  - 规则文件：config/checkstyle/checkstyle.xml、config/spotbugs/excludeFilter.xml
+  注：Boot 3.5.0 为基线（已编译通过）；升级补丁见 README「验证状态」。
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -29,6 +35,7 @@
     <!-- 独立于 Boot BOM 的组件版本（见 AGENTS.md「版本陷阱」） -->
     <mybatis-plus.version>3.5.17</mybatis-plus.version>
     <springdoc.version>2.8.13</springdoc.version>
+    <archunit.version>1.3.0</archunit.version>
   </properties>
 
   <dependencies>
@@ -59,6 +66,13 @@
       <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
       <version>${mybatis-plus.version}</version>
     </dependency>
+    <!-- jsqlparser 相关插件（分页 PaginationInnerInterceptor 等）：MP 3.5.9 起拆为独立模块，
+         默认不携带，必须显式引入，否则分页插件无法编译/生效 -->
+    <dependency>
+      <groupId>com.baomidou</groupId>
+      <artifactId>mybatis-plus-jsqlparser</artifactId>
+      <version>${mybatis-plus.version}</version>
+    </dependency>
     <!-- MySQL 驱动：版本由 Boot BOM 管理，勿手改 -->
     <dependency>
       <groupId>com.mysql</groupId>
@@ -77,6 +91,13 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- 架构测试：分层依赖方向 / QueryWrapper 隔离 / 无环（AGENTS「依赖方向」建议固化） -->
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+      <version>${archunit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -84,6 +105,147 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <!-- 质量门插件固定集（CODING_STANDARDS §13）：全部绑定 verify，CI 与本地同一条命令 -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.43.0</version>
+        <configuration>
+          <java>
+            <googleJavaFormat/>
+            <removeUnusedImports/>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.6.0</version>
+        <configuration>
+          <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <failOnViolation>true</failOnViolation>
+          <!-- 规则 XML 内 severity=warning 的团队规则必须拦构建：默认 violationSeverity=error
+               会让它们"只打印不拦截"（"0 violations" 是假绿），故显式降到 warning。 -->
+          <violationSeverity>warning</violationSeverity>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>4.10.4.1</version>
+        <configuration>
+          <threshold>High</threshold>
+          <effort>Max</effort>
+          <failOnError>true</failOnError>
+          <!-- 排除生成代码/已评估无害项；文件内每条排除必须写明理由（CODING_STANDARDS §13） -->
+          <excludeFilterFile>config/spotbugs/excludeFilter.xml</excludeFilterFile>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.8,)</version>
+                </requireMavenVersion>
+                <dependencyConvergence/>
+                <bannedDependencies>
+                  <!-- 日志桥接冲突与停止维护的实现：统一 SLF4J + Logback（CODING_STANDARDS §9/§11） -->
+                  <excludes>
+                    <exclude>commons-logging:commons-logging</exclude>
+                    <exclude>log4j:log4j</exclude>
+                  </excludes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <!-- 排除无逻辑载体与装配层（CODING_STANDARDS §13：entity/mapper/config/生成代码不纳入覆盖率门槛） -->
+              <excludes>
+                <exclude>**/entity/**</exclude>
+                <exclude>**/mapper/**</exclude>
+                <exclude>**/config/**</exclude>
+                <exclude>**/*Application.*</exclude>
+              </excludes>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <!-- 与 CODING_STANDARDS §13 范本一致（LINE ≥ 80%）；当前实测约 87%，余量用于后续演进 -->
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.80</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

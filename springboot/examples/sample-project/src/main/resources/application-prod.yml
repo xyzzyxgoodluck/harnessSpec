@@ -1,0 +1,19 @@
+# prod：生产；关闭 API 文档与 actuator 暴露面（CODING_STANDARDS §4/§11）。
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: info

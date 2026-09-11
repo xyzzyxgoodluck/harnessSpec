@@ -16,7 +16,8 @@
 | --- | --- | --- | --- |
 | Java | {{17|21|25 LTS}} | `.sdkmanrc`/pom | 全库统一 LTS |
 | Spring Boot | {{以 pom parent 为准}} | Boot BOM | MyBatis-Plus/springdoc 兼容性需对照官方 changelog |
-| MyBatis-Plus | {{3.5.x 等}} | pom `<properties>` 独立声明 | 不在 Boot BOM；升 Boot 大版本先核兼容 starter |
+| MyBatis-Plus | {{3.5.x 等}} | pom `<properties>` 独立声明 | 不在 Boot BOM；升 Boot 大版本先核兼容 starter；分页等 jsqlparser 插件**默认不携带**，需另引依赖（见下行） |
+| MyBatis-Plus jsqlparser 模块 | {{与 MyBatis-Plus 同号，如 3.5.17}} | pom `<properties>`（与 MP 同号声明） | MP 3.5.9 起从主包拆为 `com.baomidou:mybatis-plus-jsqlparser`；分页 `PaginationInnerInterceptor` 依赖它，漏加 = 编译不过或分页静默失效（细则见 CODING_STANDARDS §5） |
 | MySQL | {{8.x}} | docker-compose / 云 RDS | 字符集 utf8mb4 |
 | Redis | {{7.x|8.x}} | docker-compose | 序列化方案统一（见 §6） |
 | RabbitMQ | {{4.x}} | docker-compose | 拓扑登记见 §6 |
@@ -28,20 +29,40 @@
 
 依赖只允许**单向向下**（防调用环）：`Controller → Service → Mapper(DAO) → MySQL/中间件`。
 
+**固定分层顺序（架构信条 B7，见 `design-docs/core-beliefs.md`）**：`type → config → repo(mapper) → service → runtime → ui(controller)`——依赖只允许由右向左（`ui` 最上、`type` 最底）。本类型映射：
+
+| 规范层 | 本类型落地 |
+| --- | --- |
+| `ui` | `controller/`（HTTP 适配，薄） |
+| `runtime` | 应用装配与运行时：`SampleApplication` + Spring 容器；消息适配 `listener/` |
+| `service` | `service/`（+ `impl/`，事务边界与业务规则） |
+| `repo or dao` | `mapper/`（`BaseMapper`/自定义 SQL；条件构造器只在此层） |
+| `config` | `config/`（分页插件/Redis/RabbitMQ/序列化/线程池） |
+| `type` | `entity/` + `dto/`（表映射与出入参契约类型） |
+| **共享基础设施**（`common/`：`ErrorCode`/`Result`/`PageResult`/`CacheKeys`/`TraceId`/`OrderStatus` 等跨域常量与工具） | **不参与六层单向约束**：可被任意层依赖，自身**不得依赖业务层**（已由 ArchUnit `commonMustNotDependOnBusinessLayers` 强制） |
+
+**已批准的判定例外**（不算越层）：`entity/` 可依赖 `common/`（如状态常量 `OrderStatus`）；`config/` 内的常量类（`MqDestinations` 等）属该层内部引用。
+
+> 强制现状：`ui → service → repo`（含禁反向/同层横向）与"`common/` 不得依赖业务层"已由 ArchUnit 固化；**六层中 `config`/`type`/`runtime` 方向的越界仍属「仅评审」**（缺口与补齐路线见模板仓库 `docs/enforcement-map.md`（项目内可自建同名登记表））。
+
 ```text
 controller/ -> service/ -> mapper/(dao) -> MySQL
   service 层及以下可使用中间件：Redis / RabbitMQ（Controller 不得直接持有）
   禁止：反向依赖 / 越层依赖 / 同层横向互依赖（防调用环，ArchUnit 固化）
 ```
 
-模块划分（feature 优先 + 固定技术层子包）：
+模块划分（**分层**，与 `AGENTS.md` 目录树同源；feature 优先为可选变体，需三处同步）：
 
 | 模块/包 | 职责 | 备注 |
 | --- | --- | --- |
-| `{{order}}/{{user}}/...` | 各业务域：Controller/Service/Mapper/Entity/DTO | 域内自治，域间不横向依赖 |
-| `common/` | `BizException`/`ErrorCode`/`Result`/`PageResult`/常量/幂等工具 | 可被所有域依赖，不反向依赖业务 |
-| `dict/` | 基础元数据字典（只读查询 + `GET /dicts/{typeCode}`） | 基础设施；业务只读引用，禁写 |
-| `config/` | 分页插件/Redis/RabbitMQ/序列化/线程池配置 | 声明集中，禁魔法串 |
+| `controller/` | HTTP 适配：参数校验、调 Service、返回 DTO | 薄；禁业务判断与 Mapper 调用 |
+| `service/`（+ `impl/`） | 用例编排、事务边界、业务规则 | 接口与实现分离 |
+| `mapper/` | MyBatis-Plus Mapper（`BaseMapper`/自定义 SQL） | 依赖终点；条件构造器只在此包 |
+| `entity/` `dto/` | 表映射实体 / 入出参对象 | 实体禁直接出参 |
+| `config/` | 分页插件/Redis/RabbitMQ/序列化/线程池 | 声明集中，禁魔法串 |
+| `common/` | `BizException`/`ErrorCode`/`Result`/`PageResult`/常量/幂等工具 | 可被所有模块依赖，不反向依赖业务 |
+| `listener/` | RabbitMQ 消费者（`@RabbitListener`） | 仅做消息适配；幂等与重试集中 |
+| 字典功能 | 基础元数据字典（只读查询 + `GET /dicts/{typeCode}`） | 基础设施；按分层落点（`DictController`/`DictService`/`DictMapper`/`DictItem`），业务只读引用，禁写 |
 
 跨域协作合规出口（按优先级）：① 公共能力下沉 `common/`；② RabbitMQ 事件解耦；③ 显式编排服务 `XxxFlowService`（唯一允许依赖多个域 Service 的上层组件）。违规 = 评审打回（ArchUnit 固化）。
 
@@ -68,6 +89,7 @@ controller/ -> service/ -> mapper/(dao) -> MySQL
 | 缓存 | `{{域}}:{{对象}}:{{id}}`（如 `order:detail:12345`） | {{如 10 分钟 + 随机抖动}} | 读回源回填，写库后删 |
 | 分布式锁 | `lock:{{域}}:{{操作}}:{{id}}` | {{看门狗}} | Redisson，禁裸 SETNX |
 | 幂等 | `idem:{{域}}:{{操作}}:{{id}}` | {{24h}} | 随 MQ 消费/写接口使用 |
+| 字典 | `dict:{{typeCode}}` | {{如 30 分钟}} | 字典项列表缓存；字典变更后**删缓存**（细则见 CODING_STANDARDS §5） |
 | {{rate:/bloom:（按需）}} | … | … | 限流/布隆 |
 
 序列化全库统一：{{GenericJackson2JsonRedisSerializer | String+显式序列化}}，禁用 JDK 序列化。key 前缀常量类：`common/` 的 `OrderCacheKeys` 等。
@@ -105,7 +127,7 @@ controller/ -> service/ -> mapper/(dao) -> MySQL
 ## 10. 技术决策记录（ADR）○
 
 - 索引：`docs/design-docs/index.md`；ADR 列表：`docs/design-docs/`（命名 `{{YYYYMMDD}}-{{简述}}.md`）。
-- 必记决策（一经确定必须留痕）：主键策略、缓存一致性方案（写后删/延迟双删/版本号）、消息幂等键与顺序性取舍、逻辑删除与唯一索引冲突处理、是否引入 Flyway、MyBatis-Plus `IService` 体系是否启用等。
+- 必记决策（一经确定必须留痕）：主键策略、缓存一致性方案（写后删/延迟双删/版本号）、消息幂等键与顺序性取舍、逻辑删除与唯一索引冲突处理、是否引入 Flyway、MyBatis-Plus 通用 CRUD 抽象（`CrudRepository`，`IService` 官方已不推荐）是否启用等。
 - 新增决策流程：方案 → 权衡 → 记 ADR → 同步本文件相关小节 → 评审。
 
 ---

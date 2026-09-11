@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs 排除过滤器（CODING_STANDARDS §13：排除生成代码与已知无害项）。
+  规则：
+  1. 只排除「生成代码」与「已评估确认无害」两类，并在此写明理由与来源；
+  2. 排除项必须带注释说明为什么无害，禁止为了过门禁而无理由排除；
+  3. 本文件不匹配任何规则时保持为空过滤器（下面无 Match 节点 = 不排除任何缺陷）。
+-->
+<FindBugsFilter>
+  <!--
+    示例（按需启用，勿留未注释条目）：
+    <Match>
+      <Class name="com.example.sample.generated.*"/>
+      <Bug pattern="EI_EXPOSE_REP2"/>
+      <Notes>MyBatis-Plus Generator 产物；生成代码不手改（AGENTS「禁区」）</Notes>
+    </Match>
+  -->
+</FindBugsFilter>

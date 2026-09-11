@@ -1,0 +1,16 @@
+# dev：本地开发（连 docker compose 的中间件）；Swagger 开、日志更详细。
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.example.sample: debug
