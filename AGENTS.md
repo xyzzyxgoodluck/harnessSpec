@@ -1,6 +1,6 @@
 # AiCodingSpec
 
-> 状态：v3.3（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
+> 状态：v3.4（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
 >
 > 一句话定位：本项目是**「各类项目 AGENTS.md 规范」的汇编项目**——让每种常见项目类型都有一份可直接复制、按项目微调的 `AGENTS.md`（写给 AI 编码代理看、人也应能读懂的"项目操作手册"），使真实项目"开箱即有合格 AGENTS.md"。
 >
@@ -18,13 +18,14 @@
 | 文件 | 是什么 | 何时读 |
 | --- | --- | --- |
 | `AGENTS.md`（本文件） | 起步地图：定位/布局/类型清单/硬性红线/入口 | 任何工作开始前 |
+| [`docs/meta-spec.md`](docs/meta-spec.md) | **元规范入口（L1）**：术语表 / 四层结构（L0 依据 → L1 元规范 → L2 类型规范 → L3 项目）/ **权威矩阵（每个主题的唯一权威）** / 规则 ID 与必须·应该·可以三级 / L1 文档骨架 / 元规范验收 M0–M3 | 写或改**任何**规范之前 |
 | [`docs/authoring-types.md`](docs/authoring-types.md) | 如何新增/修订类型：工作流、统一结构骨架、类型项目文件夹结构、交付自查清单、**L1–L5 验证协议** | 要写或改一个类型时 |
 | [`docs/writing-standards.md`](docs/writing-standards.md) | 一切文档/AGENTS 的写作原则、命令书写规范、反例表 | 撰写任何正文前 |
 | [`docs/fixed-docs.md`](docs/fixed-docs.md) | **六个固定组成部分**：docs 布局 / Git 提交 / ARCHITECTURE / product-specs / 架构信条（6 条） / **质量门控（单一入口 + 失败即停 + 整条真跑）**——后两项每个类型必须内嵌 | 需要细则全文（类型模板只放摘要+链接） |
 | [`docs/harness-principles.md`](docs/harness-principles.md) | Harness Engineering 工作方式准则（OpenAI/DSH 摘编） | 想了解本仓库为何这样组织 |
 | [`docs/enforcement-map.md`](docs/enforcement-map.md) | **不变量 → 强制手段映射**：哪些「必须」已被工具/测试强制、哪些仅靠人读 | 新增/修订「必须」规则、评审"这条规则拦得住吗" |
 | [`docs/decisions.md`](docs/decisions.md) | 本仓库自身的架构决策记录（ADR） | 想知道某条仓库级约定为何这样定 |
-| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.3） | 查某条规则何时引入 |
+| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.4） | 查某条规则何时引入 |
 | `springboot/` 及各类型目录 | 类型规范交付物（交付结构见 §3.1） | 复用/复制到真实项目 |
 
 ## 3. 目录约定与结构
@@ -110,5 +111,6 @@ AiCodingSpec/
 ## 7. 维护口径
 
 - 评审：内容宁短勿水；任何与"当前主流脚手架/官方现状"不符的命令都是 bug，与坏代码同等对待。
+- **规范改动先读 [`docs/meta-spec.md`](docs/meta-spec.md)**（元规范：术语 / 分层 / **权威矩阵** / 规则 ID 与级别 / M0–M3）：同一主题只改权威文件，别处只留指针；新增「必须」规则须有强制者或显式标「仅评审」。
 - 版本：实质改动在 [`docs/changelog.md`](docs/changelog.md) 追加一行；根 AGENTS.md 只维护本"地图"内容。
 - 规范层（本仓库自身）的**机器判据清单**与**已知违反**登记在 [`docs/enforcement-map.md`](docs/enforcement-map.md) §2.4 与 §3；本仓库作为"规范汇编"对自身固定组成部分的**豁免范围与理由**见 [`docs/decisions.md`](docs/decisions.md) ADR-005（下游不得照抄本仓库根布局）。
