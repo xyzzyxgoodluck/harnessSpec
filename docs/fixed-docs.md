@@ -1,41 +1,52 @@
 # 固定组成部分（Fixed Doc Standards）
 
-> 类型模板/真实项目 `docs/` 中**必须**遵循的四个固定规范。类型 AGENTS.md 只保留"必须摘要 + 指向"，细则全文以本文件为唯一权威（避免双份漂移）。
+> 类型模板中**必须**遵循的六个固定规范：① docs 布局 ② Git 提交规范 ③ ARCHITECTURE 骨架 ④ 需求规格 ⑤ 架构信条（6 条） ⑥ **质量门控**。类型 AGENTS.md 只保留"必须摘要 + 指向"，细则全文以本文件为唯一权威（避免双份漂移）。
 > 写作细则见 `writing-standards.md`；如何在类型中产出范本见 `authoring-types.md`。
 
 ## 1. 知识库布局：docs/（固定组成部分）
 
 > 分工：AGENTS.md 只写"怎么做"（命令/约定/禁区）；"是什么 / 为什么 / 长期计划"放稳定文档，AGENTS.md 用一行链接指向，不内联长文。
-> **docs/ 是类型模板中的固定组成部分，不是假设选项**：`docs/` 目录及其核心文件（`CODING_STANDARDS.md`、`ARCHITECTURE.md`）**必建**；子目录遵循"确定性触发器"——条件一旦满足就必须建立并持续维护，**禁止**"若有…则可…"式条件句。核心文件不得为空壳：暂无内容时先写最小可用版（如 CODING_STANDARDS 至少覆盖命名、测试、格式命令三节），宁短勿空。
+> **docs/ 是类型模板中的固定组成部分，不是假设选项**：`docs/` 目录、两个核心文件（`CODING_STANDARDS.md`、`ARCHITECTURE.md`）与**五个子目录**（`design-docs/`、`product-specs/`、`exec-plans/`、`generated/`、`references/`）**一律必建**——每个必建目录至少含一个最小可用文件（`index.md` 或本节规定文件），**禁止**"未触发所以不建目录"。触发条件只决定**何时必须写入实质内容**：条件一旦满足就必须补齐并持续维护，**禁止**"若有…则可…"式条件句。核心文件与目录索引不得为空壳：暂无内容时先写最小可用版（如 CODING_STANDARDS 至少覆盖命名、测试、格式命令三节），宁短勿空。
 
-固定骨架（★=必建；其余为确定性触发器）：
+固定骨架（★=必建目录/文件；括号内为**内容触发器**，条件满足即必须写入内容）：
 
 ```text
 ARCHITECTURE.md                 # ★ 架构总览（默认放 docs/ 下，见下）
 docs/
   CODING_STANDARDS.md         # ★ 编码规范（风格/测试规范/工具命令）——类型「编码约定」章节指向它
   ARCHITECTURE.md             # ★ 架构总览：模块划分、关键链路、部署形态
-  design-docs/                # 触发器：产生首个设计决策/ADR 时建立；含 core-beliefs.md，用 index.md 索引
-  product-specs/              # 触发器：产生需求/产品规格文档时建立（index.md + 按功能命名，见 §4）
-  exec-plans/                 # 触发器：存在多轮/多代理任务或技术债时建立（active/、completed/、tech-debt-tracker.md）
-  generated/                  # 触发器：首个自动生成物（db-schema.md 等）入库时建立；只读，标注生成命令与时间
-  references/                 # 触发器：引入外部参考资料时建立；LLM 浓缩版命名 *-llms.txt
+  design-docs/                # ★ 设计决策/ADR：index.md + core-beliefs.md（触发器：首个设计决策/ADR 定案）
+  product-specs/              # ★ 需求规格：index.md + TEMPLATE.md（触发器：首个需求/规格立项，见 §4）
+  exec-plans/                 # ★ 执行计划与技术债：index.md + tech-debt-tracker.md + active/ + completed/（触发器：多轮/多代理任务或技术债）
+  generated/                  # ★ 自动生成物：index.md 为唯一手写索引，其余只读并标注生成命令与时间（触发器：首个生成物入库）
+  references/                 # ★ 外部资料登记：index.md（触发器：首次引入外部资料）；LLM 浓缩版命名 *-llms.txt
 ```
 
-根级政策文件按需少量放置（建议 ≤5 个，避免碎片化）：`SECURITY.md`、`RELIABILITY.md`、`PLANS.md`、`QUALITY_SCORE.md`、`FRONTEND.md` 等。同样以明确规则触发，不预建空文件。
+根级政策文件按需少量放置（建议 ≤5 个，避免碎片化；`CHANGELOG.md` 不占该上限——它在首个对外发布时建立）：`CHANGELOG.md`、`SECURITY.md`、`RELIABILITY.md`、`PLANS.md`、`QUALITY_SCORE.md`、`FRONTEND.md` 等。与上文五项目录不同，这些是**根级政策/记录文件**：同样以明确规则触发，不预建空文件（五项目录则是目录必建、内容按触发器）。
+
+**三者分工（避免同一件事三处各写一份）**：
+
+| 载体 | 记什么 | 触发 |
+| --- | --- | --- |
+| 根级 `CHANGELOG.md` | **对外版本变更史**（Keep a Changelog 语义：新增/变更/修复/废弃；面向使用者与发布） | 首个对外发布时建立；此后每次发布追加一节 |
+| `docs/design-docs/`（必建目录） | **对内技术决策**（ADR 与 core-beliefs：为什么这样定、取舍是什么） | 首个不可逆/跨模块决策定案 |
+| `docs/product-specs/`（必建目录） | **需求与验收**（做什么/为什么/怎么算完成） | 首个需求立项 |
+
+> 不互抄：需求状态变化回写 `product-specs/index.md`；决策留 `design-docs/`；发布记录进 `CHANGELOG.md`。**禁止**把同一变更在 `CHANGELOG.md` 与 `changelog` 式流水账里各写一遍。
 
 要点规则：
 
 1. **分层不重复**：AGENTS.md 的命令与禁区是唯一操作权威；docs 写背景与规格，**不复制命令表**。
-2. **generated/ 只读**：生成物可入库但人工不手改，顶部标注生成命令。
-3. **exec-plans/ 服务多轮/多代理任务**：长周期改造用它接力进度与技术债，避免每次从头摸索。
-4. **被引用的文档必须真实存在**：AGENTS.md「参考链接」只指向实际文件，新增即补、删除即清。
-5. **确定性而非假设**：核心文件标必建、子目录给触发器，禁止"若项目建有 docs/…"式条件句。
-6. **借鉴而非照搬**：骨架源自 [OpenAI Advanced Pack 仓库模板](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/resources/openai-advanced/repo-template/AGENTS.md)，吸收"分层知识库 + 稳定文档名 + 生成物隔离 + agent 友好引用"四点；核心两层（`docs/` + 核心文件）不变。
+2. **generated/ 只读**：生成物可入库但人工不手改，顶部标注生成命令；`generated/index.md` 是本目录唯一的手写文件（登记生成命令与输入来源）。
+3. **exec-plans/ 服务多轮/多代理任务**：长周期改造用它接力进度与技术债，避免每次从头摸索；`active/` 与 `completed/` 均必建（归档即冻结）。
+4. **被引用的文档必须真实存在**：AGENTS.md 正文内链接与 `docs/references/index.md` 的登记只指向实际存在/可达的目标，新增即补、删除即清。**AGENTS.md 默认不设「参考链接」小节**——官方文档等外部资料登记在 `docs/references/index.md`，需要时在正文就地指向。
+5. **必建目录 + 内容触发器**：核心文件与五项目录标 ★ 必建（固定要求，机器可校验，见 `scripts/validate-type.ps1` L1）；触发条件只决定"何时必须写入实质内容"，禁止"若项目建有 docs/…"式条件句，也禁止"未触发所以不建目录"。
+6. **每个必建目录有唯一入口**：目录内至少一个最小文件（`index.md` 或骨架规定文件）说明用途、触发器与命名约定，使 agent 无需猜测即可写入。
+7. **借鉴而非照搬**：骨架源自 [OpenAI Advanced Pack 仓库模板](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/resources/openai-advanced/repo-template/AGENTS.md)，吸收"分层知识库 + 稳定文档名 + 生成物隔离 + agent 友好引用"四点；核心两层（`docs/` + 核心文件 + 五项目录）不变。
 
 ## 2. Git 提交规范（每一份类型模板必须嵌入）
 
-> 提交信息是 agent 与协作者可审计的最小单元，规则必须**确定、可机器校验**。类型模板须在「编码约定」中嵌入下方规范全文（scope 词表可按类型微调），不得用"遵循良好实践 / 规范提交"一类空话代替。
+> 提交信息是 agent 与协作者可审计的最小单元，规则必须**确定、可机器校验**。类型模板须把下方规范全文**嵌入类型 `docs/CODING_STANDARDS.md` 的「Git 提交规范」节**（scope 词表可按类型微调），并在 `AGENTS.md`「编码约定」章保留**一行摘要 + 指向该节**——AGENTS 不重复全文（口径见本文件开头"类型 AGENTS.md 只保留'必须摘要 + 指向'"，见 `springboot/AGENTS.md` 范例）；不得用"遵循良好实践 / 规范提交"一类空话代替。
 
 - **格式（必须）**：`<type>(<scope>): <subject>`，如 `feat(order): 增加取消订单接口`。
 - **type（必填，小写）**：`feat` 新功能 / `fix` 缺陷修复 / `docs` 文档 / `style` 格式（不影响逻辑）/ `refactor` 重构 / `perf` 性能 / `test` 测试 / `build` 构建 / `ci` CI 变更 / `chore` 杂项 / `revert` 回滚。
@@ -73,9 +84,9 @@ docs/
 2. 类型模板将本骨架填充为范本（`<类型>/docs/ARCHITECTURE.md`，如 `springboot/docs/ARCHITECTURE.md`），复制到真实项目后填 `{{占位符}}` 并按实际裁剪。
 3. 架构变更（新增模块/链路/中间件、主键与一致性方案调整）**必须**同步本文件并记录 ADR 到 `design-docs/`。
 
-## 4. 需求规格：product-specs/（固定组成部分，触发器驱动）
+## 4. 需求规格：product-specs/（固定组成部分；目录必建、内容按触发器）
 
-> 需求规格是"做什么 / 为什么 / 验收标准"的权威（`docs/product-specs/`）。**触发器**（见 §1）：首个需求/产品规格立项即建 `docs/product-specs/`（含 `index.md`）；一经建立，后续**每个需求一个文件**，维护到实现关闭。类型模板须提供需求规格范本（index + 单需求模板）放入类型目录 `docs/product-specs/` 并登记类型 README。
+> 需求规格是"做什么 / 为什么 / 验收标准"的权威（`docs/product-specs/`）。**目录必建**（含 `index.md` + `TEMPLATE.md`，见 §1）；**内容触发器**：首个需求/产品规格立项即写入 `index.md` 登记行与单需求文件，此后**每个需求一个文件**，维护到实现关闭。类型模板须提供需求规格范本（index + 单需求模板）放入类型目录 `docs/product-specs/` 并登记类型 README。
 
 单需求文件固定骨架（★=必建，○=按需求类型取舍）：
 
@@ -98,3 +109,50 @@ docs/
 4. **落地闭环**：确认 → 拆 `exec-plans/active/` → 实现 + 测试 → 完成回写 `index.md` 状态。
 
 > 历史与变更登记统一在根 `docs/changelog.md`。
+
+## 5. 架构信条（Architecture Beliefs，每个类型必须内嵌）
+
+> 这 6 条是**规范层不变量**：类型模板必须把它们**内嵌**到 `<类型>/docs/design-docs/core-beliefs.md`（含栈内落地与强制者），并把分层映射写进 `<类型>/docs/ARCHITECTURE.md` §3——类型是**独立交付物**（复制到真实项目后读不到本仓库），故必须自带全文，不能只给指针。
+> 与其余固定部分一样：**细则全文以本文件为唯一权威**；类型内只写"落地"与"强制者"，不另起一套措辞。每条信条都要在根仓库 `docs/enforcement-map.md` 登记强制者（工具/测试/仅评审）。
+
+1. **分层依赖固定为 `type → config → repo or dao → service → runtime → ui`**（依赖只允许由右向左单向：`ui` 最上层，`type` 最底层；`repo or dao` 指同层的持久化访问层，二者只取其一并全库统一命名）。类型必须给出该顺序与本类型目录/包的**映射表**，并把缺口（尚未被工具覆盖的方向）如实标注。
+2. **规范先行（spec-first）**：先有规范与设计（`AGENTS.md`、`ARCHITECTURE.md`、需求规格、ADR），再有代码；改动先改规范再改实现，**禁止**"代码先行、文档补记"。
+3. **开闭原则（OCP）**：对扩展开放、对修改关闭——新增能力优先通过新增实现/策略/事件扩展；靠增长 `if type == ...` 分支来支持新类型视为违反。
+4. **禁止过度设计**：不做当前需求用不到的抽象、配置项、扩展点与中间层；任何抽象必须由**至少两处真实使用**或明确的近期需求支撑，否则先删掉。
+5. **RDBMS 表设计必须达到第三范式（3NF）**：先满足 1NF/2NF/3NF，**禁止**为省一次 JOIN 冗余存储可推导数据；确需反范式（缓存列/汇总表/读模型）必须**记 ADR** 并写明同步方式与一致性策略。
+6. **单一职责原则（SRP）**：一个模块/类/函数只对一个变化原因负责；出现"因两个不同原因而必须修改"的组件即拆分。
+
+规则：
+
+1. 每条信条在类型内必须有**栈内落地**（落在哪个文件/包/契约/配置）与**强制者**；无法机器化的显式标注「仅评审」（口径见 `enforcement-map.md` §1）。
+2. 信条与类型细则冲突时，以更具体者优先：类型 `CODING_STANDARDS`/`ARCHITECTURE` 细则 > 本信条 > 通用建议；冲突须记 ADR 而非静默取舍。
+3. 信条**只增不改**：语义变化追加新条目并标注取代关系（与 `core-beliefs.md` 的"只增不改"一致）。
+
+## 6. 质量门控（固定组成部分，每个类型必须内嵌）
+
+> 质量门是"不变量真的拦得住"的**唯一执行载体**（原则见 `harness-principles.md` 第 4 条；强制者登记见 `enforcement-map.md`）。它与其他固定部分同级：每个类型模板必须把**入口约定 + 三条硬要求**落到自己的模板里（`AGENTS.md`「测试与质量门」章、`docs/CODING_STANDARDS.md` 的质量门节、CI 配置），细则全文以本文件为唯一权威。
+
+**定义**：质量门 = **提交/合并前必须全绿、且本地与 CI 跑同一条命令的单一入口**。它不是"检查项清单"，而是**一条可执行命令**：把该类型的格式、静态检查、类型检查、架构/依赖方向契约、测试（及覆盖率门限）按序封装，**任一项失败立即以非 0 退出**。
+
+**三条硬要求（必须内嵌）**：
+
+1. **单一入口**：质量门在模板里只以**一个命令**出现——占位符 `{{质量门入口命令}}`；范例：`springboot` = `./mvnw clean verify`，`python-fastapi` = 形如 `uv run python scripts/gate.py`（把五项检查按序封装）。禁止写成一串 `&&` 连接的检查清单（违反 `writing-standards.md` §2.2"一个动作一条命令"），也禁止 AGENTS 与 CI 各维护一份不同的命令。
+2. **失败即停、真拦构建**：入口按序执行、首次失败即停止并返回非 0；**只告警不拦构建＝假绿**（实测：Checkstyle 默认 `violationSeverity=error` 会让 `severity=warning` 的规则形同虚设）。假绿不算强制，模板中**不得声称"已强制"**。
+3. **整条真跑 + 故意违规即红**：类型发布前质量门必须**整条真跑过一次**（不是只跑 `compile` 或部分检查项），并**故意制造一次违规**证明确实会红、还原后复跑恢复绿；两次输出记入类型 `README.md`「验证状态」。
+
+**最小覆盖范围**：格式、lint/静态检查、类型检查（该栈有则必须）、**架构/依赖方向等机器化不变量**、单元测试，以及（如适用）覆盖率门限与构建/打包。依赖中间件的集成测试可置于独立标记下默认不跑，但必须在类型 README **如实标注未覆盖范围**；禁止用"应该能跑"或 `-Dskip.*` 蒙混。
+
+**落点分工（不互抄）**：
+
+| 载体 | 只写什么 |
+| --- | --- |
+| 类型 `AGENTS.md`「测试与质量门」 | **入口命令**（全仓库唯一一份）与"合并前必须全绿"；单项检查入口 |
+| 类型 `docs/CODING_STANDARDS.md` 的质量门节 | 门内各检查项"检查什么、规则配在哪、阈值与排除范围" |
+| CI 配置（`.github/workflows/*` 或等价物） | 调用**同一条**入口命令；另跑锁文件/依赖一致性校验 |
+| 根 `docs/enforcement-map.md` | 每条「必须」的**强制者**登记（工具/测试/仅评审），不重复命令正文 |
+
+规则：
+
+1. 模板中不得出现两份质量门命令；AGENTS 与 CI 两处必须逐字一致（机器只能校验链接与同源，命令一致性**目前仅靠评审**——已在 `enforcement-map.md` §3 登记为待机器化项）。
+2. 门内检查项与其强制者必须一一登记到 `enforcement-map.md`；「仅评审」的规则不得写进质量门冒充强制。
+3. 增删门内检查项属规范实质变更：同步修订 `CODING_STANDARDS.md` 的质量门节与类型 `README.md`「验证状态」，并登记 `changelog.md`。

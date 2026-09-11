@@ -1,7 +1,7 @@
 # 类型规范编写指南（Authoring a Type）
 
 > 用途：新增或修订一个项目类型目录（如 `springboot/`）时的**流程、结构骨架、项目文件夹结构与交付自查**。
-> 配套：写作细则见 `writing-standards.md`；四个"固定组成部分"（docs 布局 / Git 提交 / 架构文档 / 需求规格）见 `fixed-docs.md`；类型登记表在根 `AGENTS.md`。
+> 配套：写作细则见 `writing-standards.md`；六个"固定组成部分"（docs 布局 / Git 提交 / 架构文档 / 需求规格 / **架构信条 6 条** / **质量门控**）见 `fixed-docs.md`；类型登记表在根 `AGENTS.md`。
 >
 > 原则：**不提供可整篇粘贴的"通用骨架模板"**——类型的写法由"结构（§2 骨架 + §3 文件夹结构）+ 固定内容（fixed-docs）"决定，`springboot/` 即现行完整范例。
 
@@ -24,12 +24,12 @@
 | 2 | **环境与版本约束** | ◎ | 只写语言/运行时最低版本与依赖管理器，**指向 pom/README 等单一来源**；密钥红线可留一句。**环境准备类内容不写入 AGENTS.md**（归 README/部署文档） | ≤5 行 |
 | 3 | **快速开始** | ★ | clone → 安装依赖 → 启动 → 跑通测试，4–8 条**可直接复制**的命令 | ≤20 行 |
 | 4 | **常用命令** | ★ | 表格：目的 / 命令 / 执行目录 / 备注（build、run、test、lint、format、typecheck、迁移、加依赖、生成代码） | 8–20 行 |
-| 5 | **目录结构与架构** | ◎ | **该技术栈真实项目的一棵目录树**（纯缩进+注释）+ 关键链路一句；长文指向 docs | ≤30 行 |
-| 6 | **编码约定** | ◎ | lint/format 规则与命令；命名；commit 规范；测试约定 | ≤25 行 |
-| 7 | **测试与质量门** | ◎ | 全量/单测/集成测命令；CI 实际内容；合并前必过项 | ≤15 行 |
+| 5 | **目录结构与架构** | ◎ | **逐文件目录树**（路径 + 文件 + 内联职责注释；含 `docs/` 两个核心文件与五项目录的必建文件）+ 关键链路一句；分层映射指向 `docs/ARCHITECTURE.md` §3 | ≤35 行 |
+| 6 | **编码约定** | ◎ | **只列硬约束**：有强制者（工具/架构测试/注册表测试）或属既定红线的条目；命名与分层、DAO 方法前缀、中间件命名、API 文档注解、测试约定等**口味类细则只留指针**（指向 `CODING_STANDARDS.md` §N），不摘要；**推荐就地标出强制者**（范例：`springboot/AGENTS.md`）；commit 规范属固定组成部分，保留摘要 | ≤15 行 |
+| 7 | **测试与质量门** | ◎ | **单一入口命令**（`{{质量门入口命令}}`，"合并前必须全绿"）+ 单项检查入口；硬要求（单一入口 / 失败即停 / 整条真跑 + 故意违规即红）见 `fixed-docs.md` §6 | ≤15 行 |
 | 8 | **工作流与发布** | ○ | 分支模型、版本、发布/部署步骤 | 有流程才写 |
 | 9 | **约束、禁区与陷阱** | ◎ | 勿动目录及原因；平台差异；已知坑与规避；安全/性能红线 | ≤25 行 |
-| 10 | **参考链接** | ○ | 链接而非粘贴正文 | ≤5 行 |
+| 10 | **参考链接（默认不设）** | ○ | **默认省略该章**：官方文档与外部资料登记在 `docs/references/index.md`，正文需要时就地给出链接；只有确需集中罗列时才建，且只列真实可达的链接 | 0–5 行 |
 
 > 顺序即优先级：第 1–4 章在最前；第 9 章中涉及安全的内容可提前置顶。类型文件允许按"该类型的典型真实项目"给出示例值（置于代码块/注释中），但**默认**仍是 `{{占位符}}`。
 > 结构描述统一用目录树（纯缩进 + 注释）或顶层职责表，见 `writing-standards.md`。
@@ -44,10 +44,14 @@
 {{类型名}}/                     # 如 springboot/（小写 kebab-case）
   AGENTS.md                   # ★ 该类型的规范/模板（操作手册）：§2 骨架 + 该栈真实目录树 + fixed-docs 固定内容
   README.md                   # 类型说明：适用范围/版本对照/验证状态（登记范本入口与 L1–L5 记录）
-  docs/                       # ★ 类型交付物范本（固定知识库，按 fixed-docs §1 组织）：
-    CODING_STANDARDS.md       # 编码细则范本
-    ARCHITECTURE.md           # 架构规范范本（fixed-docs §3 骨架）
-    product-specs/            # 需求规格范本（index.md + TEMPLATE.md，fixed-docs §4）
+  docs/                       # ★ 类型交付物范本（固定知识库，按 fixed-docs §1 组织；目录一律必建）：
+    CODING_STANDARDS.md       # ★ 编码细则范本
+    ARCHITECTURE.md           # ★ 架构规范范本（fixed-docs §3 骨架）
+    design-docs/              # ★ 设计决策/ADR 范本：index.md + core-beliefs.md（内容按触发器）
+    product-specs/            # ★ 需求规格范本：index.md + TEMPLATE.md（fixed-docs §4）
+    exec-plans/               # ★ 执行计划与技术债范本：index.md + tech-debt-tracker.md + active/ + completed/
+    generated/                # ★ 生成物登记范本：index.md（本目录唯一手写文件；其余只读）
+    references/               # ★ 外部资料登记范本：index.md（LLM 浓缩版命名 *-llms.txt）
   examples/（如建）                 # L3 冒烟样例项目等（如 springboot/examples/sample-project/），非交付范本
 ```
 
@@ -56,20 +60,21 @@
 ```text
 {{项目根}}/
   AGENTS.md                   # 复制类型 AGENTS.md 后：填 {{占位符}} → 裁剪 ○ 章节 → 逐条验证命令
-  docs/                       # 固定知识库（fixed-docs §1）
+  docs/                       # 固定知识库（fixed-docs §1；目录一律必建，实质内容按触发器补齐）
     CODING_STANDARDS.md       # ★ 编码规范（细则唯一权威）
     ARCHITECTURE.md           # ★ 架构总览
-    design-docs/              # 触发器：首个 ADR 时建（core-beliefs.md、index.md）
-    product-specs/            # 触发器：有需求/规格时建
-    exec-plans/               # 触发器：多轮/多代理任务或技术债（active/、completed/、tech-debt-tracker.md）
-    generated/                # 触发器：自动生成物；只读，标注生成命令
-    references/               # 触发器：外部资料；LLM 浓缩版命名 *-llms.txt
+    design-docs/              # ★ index.md + core-beliefs.md（触发器：首个设计决策/ADR）
+    product-specs/            # ★ index.md + TEMPLATE.md（触发器：首个需求/规格）
+    exec-plans/               # ★ index.md + tech-debt-tracker.md + active/ + completed/（触发器：多轮/多代理任务或技术债）
+    generated/                # ★ index.md 为唯一手写索引，其余只读（触发器：首个生成物入库）
+    references/               # ★ index.md（触发器：首次引入外部资料）
   {{其余目录}}                # = 该类型 AGENTS.md「目录结构与架构」章节里画的那棵树
 ```
 
 要点：
 
-- 类型 AGENTS.md 的正文 = **§2 骨架** + **该技术栈真实的「目录结构与架构」树**（层/模块结构 + 注释职责）+ **fixed-docs 固定内容摘要** + 写实的操作命令；**不要再内置一份占位模板正文**。
+- 类型 AGENTS.md 的正文 = **§2 骨架** + **该技术栈的逐文件目录树**（路径/文件 + 内联职责注释）+ **fixed-docs 固定内容摘要** + 写实的操作命令；**不要再内置一份占位模板正文**。
+- **docs/ 必建骨架（目录必建、内容触发器）**：两个核心文件与五项目录（`design-docs/`、`product-specs/`、`exec-plans/`、`generated/`、`references/`）一律必建，每个目录至少含一个最小文件（`index.md` / `core-beliefs.md` / `TECH_DEBT` 等骨架规定文件）；触发条件只决定**何时必须写入实质内容**。该骨架由 L1 机器校验（`scripts/validate-type.ps1`），与 `fixed-docs.md` §1 同源、不得两处漂移。
 - 复制即用：复制 → 填 `{{}}` → 裁剪 ○ 章节 → 逐条验证（见 `writing-standards.md`）。
 - 范例即现行 `springboot/`（其 `AGENTS.md` 的目录树与 `docs/*` 范本就是参考实现）。
 
@@ -85,20 +90,31 @@
 - [ ] 密钥、内网地址、真实账号未出现
 - [ ] 无整段复制 README/源码注释；无模糊措辞（"应该/通常/尽量"）
 - [ ] 结构符合本文 §2 骨架（★ 章节齐全、顺序一致）
-- [ ] 「目录结构与架构」给出该类型真实项目的一棵树（纯缩进，不用 `├──` 等制表符）
+- [ ] 「目录结构与架构」给出该类型的**逐文件目录树**（含路径、`docs/` 必建文件与内联职责注释；纯缩进，不用 `├──` 等制表符）
 - [ ] 不含环境准备类内容（装 JDK/Docker、手工起中间件、下载耗时）
-- [ ] 已落实 `fixed-docs.md` 固定内容：docs 布局（必建核心）、Git 提交规范、ARCHITECTURE、product-specs（按触发器）
-- [ ] 参考链接真实有效；指向 docs 的链接存在且不与该文件内容重复
+- [ ] 已落实 `fixed-docs.md` 固定内容：docs 布局（**两核心文件 + 五项目录必建**、实质内容按触发器）、Git 提交规范、ARCHITECTURE、product-specs、**质量门控**（§6：单一入口 + 失败即停 + 整条真跑）
+- [ ] `docs/` 五项目录（design-docs/product-specs/exec-plans/generated/references）存在且各含最小入口文件（`index.md` 等），无空壳、无"未触发所以不建"
+- [ ] 正文内链接真实有效且不与所指向文件重复；**默认不设「参考链接」小节**（外部资料与官方文档登记在 `docs/references/index.md`）
+- [ ] 每条「必须」规则在 [`docs/enforcement-map.md`](enforcement-map.md) 有登记：有强制者（工具/测试），或显式标注「仅评审」并给出理由
+- [ ] 「编码约定」章只列**有强制者或属既定红线**的条目，未把 `CODING_STANDARDS.md` 的口味类细则搬进来重复（指向 §N 即可；推荐同时标出强制者，范例 `springboot/AGENTS.md`）
+- [ ] 质量门命令**整条真跑过一次**（不是只跑 `compile`），且"故意违规即红"已验证；结果记入类型 README「验证状态」
 - [ ] 文件规模未超限；变更已在 `changelog.md` 登记
 
 ## 5. 验证：如何证明一份类型 AGENTS.md 是对的
 
 > 类型规范不能只靠"人读一遍"发布（命令必须真实可验证、证据驱动）。发布前依次通过 L1–L5，并把结果登记到类型 README「验证状态」。
 
-- **L1 静态校验（机器）**：`pwsh -File scripts/validate-type.ps1 -TypePath <类型名>` —— 检查树形画线字符、占位符配平、密钥形态启发、相对 `.md` 链接存在、根 `AGENTS.md` 必需章节。要求 **FAIL=0**。
+- **L1 静态校验（机器，两层）**：
+  1. 类型级：`pwsh -File scripts/validate-type.ps1 -TypePath <类型名>` —— 检查树形画线字符、占位符配平、密钥形态启发（含 `${VAR:默认非空}` 的 WARN）、相对 `.md` 链接存在、根 `AGENTS.md` 必需章节、**`docs/` 必建骨架存在性（两核心文件 + 五项目录及最小入口文件）**。
+  2. 仓库级：`pwsh -File scripts/validate-repo.ps1` —— 检查根文档的链接/`§N` 引用/画线字符/占位符、类型目录 ↔ 根 `AGENTS.md` §4 登记表双向一致、类型范本与 `examples/` 副本**同源**、根 AGENTS 版本号 ↔ `changelog` 当前版本、`AGENTS §N` 悬挂引用。
+  两者都要求 **FAIL=0**。（宿主需 PowerShell 5.1+：脚本为 UTF-8 with BOM，`powershell -File` 亦可；见 [`decisions.md`](decisions.md) ADR-003。）
 - **L2 结构/红线复核（人/代理）**：对照本文 §4「交付自查清单」逐项核对（语义、确定性、占位符规范、文档体系一致）。
-- **L3 动态冒烟（最有力）**：用官方脚手架生成一个最小**样例项目** → 复制该类型 `AGENTS.md` 并填占位 → **逐条执行**「快速开始/常用命令」（构建、测试、质量门 `verify`，含服务则 curl 探活）→ 以真实输出为准修正模板。
-- **L4 评审通道**：作者（代理）自审 → 另一代理按 L1/L2 复核并允许反驳；作者修复或书面说明；通过后才能在根 AGENTS.md 登记为"已发布"。
+- **L3 动态冒烟（最有力）**：用官方脚手架生成一个最小**样例项目** → 复制该类型 `AGENTS.md` 并填占位 → **逐条执行**「快速开始/常用命令」（构建、测试、质量门 `verify`，含服务则 curl 探活）→ 以真实输出为准修正模板。两条硬要求：
+  1. **质量门必须"整条"跑过**（不是只跑 `compile`），并**故意制造一次违规**（如插一个 `System.out`、反向依赖、`SELECT *`）证明它**真的会红**，随后还原并复跑确认恢复绿——把两次输出都记进 README（硬要求全文见 `fixed-docs.md` §6）；
+  2. 环境不具备时（如无 Docker/无中间件），先跑"**无中间件切片**"并在 README **如实标注未覆盖范围**（不得用"应该能跑"替代证据，也不得靠 `-Dskip.*` 蒙混）。
+- **L4 评审通道**：作者（代理）自审 → **另一代理**按 L1/L2 复核并允许反驳；作者修复或书面说明；通过后才能在根 AGENTS.md 登记为"已发布"。两条硬要求：
+  1. **声明必须能被实验证伪**：文档里凡写"由 X 强制/已机器化"的条目，评审方要**亲手制造一次违规**确认它真的会红（本次实测踩到：`import-linter` 的 `layers` 契约只保证"上层可引用下层"，**不拦越层与同层横向**，而文档已宣称三者都强制；另有"团队规则只告警不拦构建"的假绿）。**声明强于实际 = BLOCKER**，修法优先补强制，其次才是收窄措辞。
+  2. **评审期间冻结交付物**：L4 开始前先固定修订点（commit/tag 或等价哈希），评审中不得并发改动；否则"复核通过"随时失效（本次两份 L4 报告都出现对象漂移，需发修订点更新）。
 - **L5 现状核实与时间戳**：模板中依赖"当前官方现状"的说法（版本线/兼容/标准命令）在发布与修订时**联网核对**，并在类型 README 记录"最后核实：YYYY-MM"。
 
 **记录与重验**：类型 README 增加「验证状态」（日期 / L1 结果 / L3 冒烟摘要 / L5 核实时间）；触发修订（框架大版本升级、命令变化、发现缺坑）后必须重跑 L1 + L3。

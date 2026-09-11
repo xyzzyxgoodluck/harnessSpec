@@ -4,15 +4,19 @@
 #   pwsh -File scripts/validate-type.ps1 -TypePath springboot -RequiredHeadings '## 快速开始','## 常用命令'
 # 说明：
 #   - L1 只做"机器可判"的静态检查；语义/命令真实性请配合 L2 自查清单、L3 样例项目冒烟、L4 评审（见 docs/authoring-types.md §5）。
+#   - 检查项：树形画线字符 / 占位符配平 / 密钥形态启发 / 相对链接存在 / 根 AGENTS.md 必需章节 / CODING_STANDARDS §N 引用 / docs 必建骨架（fixed-docs §1）。
+#   - 宿主：PowerShell 5.1+ 均可（本文件为 UTF-8 with BOM）；Windows 用 `powershell -File`，跨平台/CI 用 `pwsh -File`。
+#   - 跨平台：脚本内路径一律用 '/' 分隔符（Windows 与 Linux 通用）。
 #   - 退出码：0 = 无 FAIL；1 = 存在 FAIL。WARN 需人工确认，不计失败。
 param(
     [Parameter(Mandatory = $true)][string]$TypePath,
-    [string[]]$RequiredHeadings = @('## 快速开始', '## 常用命令', '## 测试与质量门', '## 约束、禁区与陷阱', '## 参考链接')
+    [string[]]$RequiredHeadings = @('## 快速开始', '## 常用命令', '## 测试与质量门', '## 约束、禁区与陷阱')
 )
 
 $root = (Split-Path $PSScriptRoot -Parent)
 $dir = (Resolve-Path -LiteralPath (Join-Path $root $TypePath) -ErrorAction Stop).Path
-$mdFiles = Get-ChildItem -LiteralPath $dir -Recurse -File -Filter *.md
+$mdFiles = Get-ChildItem -LiteralPath $dir -Recurse -File -Filter *.md |
+    Where-Object { $_.FullName -notmatch '[\\/](target|\.venv|venv|node_modules|__pycache__|\.mvn|\.git|\.mypy_cache|\.ruff_cache|\.pytest_cache)[\\/]' }
 $fail = 0; $warn = 0; $issues = [System.Collections.Generic.List[string]]::new()
 $glyphRe = '[├└┌┐┃┏┗│─►■]'
 $secretRe = '(?i)(password|passwd|secret|token|api[_-]?key|access[_-]?key|secret[_-]?key)\s*[=:]\s*[A-Za-z0-9_\-]{8,}'
@@ -22,12 +26,20 @@ foreach ($f in $mdFiles) {
     if ([string]::IsNullOrWhiteSpace($rel)) { $rel = $f.Name }
     $text = [System.IO.File]::ReadAllText($f.FullName)
 
-    # 1) 树形制表符/画线字符
+    # 1) 树形制表符/画线字符（豁免"禁止/反例"语境的元提及）
     $m = [regex]::Matches($text, $glyphRe)
     if ($m.Count -gt 0) {
-        $chars = ($m | ForEach-Object { $_.Value } | Sort-Object -Unique) -join ''
-        $issues.Add("FAIL  [$rel] 含树形/画线字符: $chars —— 请改用纯缩进（writing-standards）")
-        $fail++
+        $real = @()
+        foreach ($gl in $m) {
+            $ln = ($text.Substring(0, $gl.Index) -split "`r?`n")[-1]
+            if ($ln -match '不用|禁用|禁止|反例|✗') { continue }
+            $real += $gl.Value
+        }
+        if ($real.Count -gt 0) {
+            $chars = ($real | Sort-Object -Unique) -join ''
+            $issues.Add("FAIL  [$rel] 含树形/画线字符: $chars —— 请改用纯缩进（writing-standards）")
+            $fail++
+        }
     }
 
     # 2) 占位符配平（模板允许 {{}}，但数量须成对）
@@ -45,6 +57,12 @@ foreach ($f in $mdFiles) {
             $issues.Add("WARN  [$rel] 疑似密钥赋值（请确认是占位/示例而非真实值）: " + $s.Value)
         }
         $warn += $sm.Count
+    }
+
+    # 3b) 密钥类环境变量带非空默认值（WARN，需人工确认）：${DB_PASSWORD:root} 会把开发口令固化成"默认可连"
+    foreach ($dm in [regex]::Matches($text, '\$\{[A-Z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|KEY)[A-Z0-9_]*:[^}]+\}')) {
+        $issues.Add("WARN  [$rel] 密钥类环境变量带默认值（确认非真实口令/生产禁用）: " + $dm.Value)
+        $warn++
     }
 
     # 4) 相对 .md 链接存在性（http(s)/mailto/纯锚点除外，向上 ../ 亦检查）
@@ -76,7 +94,7 @@ foreach ($f in $mdFiles) {
 }
 
 # 6) AGENTS/README 等对 docs/CODING_STANDARDS.md 的 §N 引用存在性
-$coding = Join-Path $dir 'docs\CODING_STANDARDS.md'
+$coding = Join-Path $dir 'docs/CODING_STANDARDS.md'
 if (Test-Path -LiteralPath $coding) {
     $cLines = [System.IO.File]::ReadAllText($coding) -split "`r?`n"
     $valid = [System.Collections.Generic.HashSet[int]]::new()
@@ -97,6 +115,48 @@ if (Test-Path -LiteralPath $coding) {
                 }
             }
         }
+    }
+}
+
+# 7) docs/ 必建骨架（fixed-docs §1）：两核心文件 + 五项目录及各自最小入口文件
+#    目录必建（固定要求），触发条件只决定内容何时补齐；缺一即 FAIL。
+$requiredDocs = @(
+    'docs/CODING_STANDARDS.md',
+    'docs/ARCHITECTURE.md',
+    'docs/design-docs/index.md',
+    'docs/design-docs/core-beliefs.md',
+    'docs/product-specs/index.md',
+    'docs/product-specs/TEMPLATE.md',
+    'docs/exec-plans/index.md',
+    'docs/exec-plans/tech-debt-tracker.md',
+    'docs/exec-plans/active/index.md',
+    'docs/exec-plans/completed/index.md',
+    'docs/generated/index.md',
+    'docs/references/index.md'
+)
+foreach ($rel in $requiredDocs) {
+    if (-not (Test-Path -LiteralPath (Join-Path $dir $rel))) {
+        $issues.Add("FAIL  [docs 骨架] 缺少必建文件: $rel —— fixed-docs §1 要求两核心文件 + 五项目录各含最小入口文件（目录必建、内容按触发器）")
+        $fail++
+    }
+}
+
+# 8) 配置文件（非 .md）的密钥形态与"带默认值的密钥类环境变量"（WARN）
+#    为什么单列：密钥/默认口令最常出现在 yml/env/compose 里，而上面的扫描只覆盖 *.md。
+$cfgExt = @('.yml', '.yaml', '.properties', '.env', '.example', '.ini', '.toml')
+$cfgFiles = Get-ChildItem -LiteralPath $dir -Recurse -File |
+    Where-Object { $cfgExt -contains $_.Extension.ToLower() } |
+    Where-Object { $_.FullName -notmatch '[\\/]target[\\/]|[\\/]\.venv[\\/]|node_modules|__pycache__|[\\/]\.mvn[\\/]' }
+foreach ($cf in $cfgFiles) {
+    $crel = $cf.FullName.Substring($dir.Length).TrimStart('\', '/')
+    $ctext = [System.IO.File]::ReadAllText($cf.FullName)
+    foreach ($sm in [regex]::Matches($ctext, $secretRe)) {
+        $issues.Add("WARN  [$crel] 疑似密钥赋值（确认是占位/示例而非真实值）: " + $sm.Value)
+        $warn++
+    }
+    foreach ($dm in [regex]::Matches($ctext, '\$\{[A-Z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|KEY)[A-Z0-9_]*:[^}]+\}')) {
+        $issues.Add("WARN  [$crel] 密钥类环境变量带默认值（确认非真实口令/生产禁用）: " + $dm.Value)
+        $warn++
     }
 }
 

@@ -1,0 +1,15 @@
+# 统一行尾与文本判定（本仓库文档/脚本/代码一律以 LF 提交）
+# 背景：Windows 本地 core.autocrlf=true 时，若无 .gitattributes，同一文件在不同平台会因行尾差异产生整文件 diff，
+#      也会让"范本 ↔ 样例副本逐字节同源"这类校验误报（见 scripts/validate-repo.ps1 与 docs/decisions.md ADR-003 补充）。
+* text=auto eol=lf
+
+# 二进制文件不参与行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.zip binary
+*.gz binary
+*.pdf binary

@@ -1,0 +1,76 @@
+name: validate
+
+# 仓库自身的强制门禁（Harness 原则：文档不治漂移，强制才治）。
+# 与本地同一条命令，见 docs/authoring-types.md §5（L1 / L1'）与 docs/enforcement-map.md。
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  static-checks:
+    name: 静态校验（L1 类型级 + L1' 仓库级）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 仓库级校验（L1'）
+        shell: pwsh
+        run: ./scripts/validate-repo.ps1
+
+      - name: 类型级校验（L1，逐类型）
+        shell: pwsh
+        run: |
+          $types = Get-ChildItem -Directory |
+            Where-Object { $_.Name -notin @('docs', 'scripts', '.git') -and (Test-Path (Join-Path $_.FullName 'AGENTS.md')) }
+          $failed = @()
+          foreach ($t in $types) {
+            Write-Host "== L1: $($t.Name) =="
+            & ./scripts/validate-type.ps1 -TypePath $t.Name
+            if ($LASTEXITCODE -ne 0) { $failed += $t.Name }
+          }
+          if ($failed.Count -gt 0) { Write-Host "FAILED: $($failed -join ', ')"; exit 1 }
+          Write-Host "全部类型 L1 通过。"
+
+  python-fastapi-gate:
+    name: python-fastapi 样例质量门
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: 同步依赖（锁定文件为准）
+        working-directory: python-fastapi/examples/sample-project
+        run: uv sync --locked
+
+      - name: 质量门（ruff + format + mypy + import-linter + pytest）
+        working-directory: python-fastapi/examples/sample-project
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy src tests
+          uv run lint-imports
+          uv run pytest -q
+        # 注：AGENTS 要求项目提供"质量门单一入口"（一条命令）；本样例尚未提供入口脚本，
+        # 故此处按与入口脚本相同的顺序分步执行，检查集合与顺序保持一致。
+
+  springboot-gate:
+    name: springboot 样例质量门
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: 质量门（clean verify：格式 + Checkstyle + SpotBugs + Enforcer + JaCoCo + 测试）
+        working-directory: springboot/examples/sample-project
+        run: ./mvnw -B clean verify
