@@ -1,0 +1,110 @@
+[project]
+name = "sample-project"
+version = "0.1.0"
+description = "python-fastapi 类型 L3 冒烟样例：最小可跑的 FastAPI 分层骨架"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141,<0.142",
+    "uvicorn[standard]>=0.52,<0.53",
+    "pydantic>=2.13,<3",
+    "pydantic-settings>=2.15,<3",
+    "sqlalchemy[asyncio]>=2.0.52,<2.1",
+    "asyncpg>=0.31,<0.32",
+    "alembic>=1.19,<2",
+    "redis>=8.1,<9",
+    "aio-pika>=10.0,<11",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1,<10",
+    "pytest-asyncio>=1.4,<2",
+    "httpx>=0.28,<0.29",
+    "ruff>=0.16,<0.17",
+    "mypy>=2.3,<3",
+    "import-linter>=2.15",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sample"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+# T20 = 禁 print/T20*（日志一律走 logging，见 docs/CODING_STANDARDS.md §11）
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ASYNC", "RUF", "T20"]
+# RUF001/002/003 报"全角标点歧义"：中文注释与文档一律用全角标点，故关闭（团队决议，见 docs/CODING_STANDARDS.md §14）。
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["redis.*", "aio_pika.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q --strict-markers"
+# 标记必须在此登记（配合 --strict-markers：未登记即失败），否则 -m integration 会静默选不中
+markers = [
+    "integration: 需要真实 PostgreSQL/Redis/RabbitMQ 的集成测试（本地无中间件时用 -m 'not integration' 排除）",
+]
+
+# 依赖方向契约（对应 docs/CODING_STANDARDS.md §4）：把"只允许单向分层"从文档变成可执行检查。
+# 运行：uv run lint-imports（已纳入质量门，见 AGENTS.md「测试与质量门」）
+[tool.importlinter]
+root_package = "sample"
+
+[[tool.importlinter.contracts]]
+name = "分层单向：routers -> services -> repositories -> models"
+type = "layers"
+layers = [
+    "sample.api.routers",
+    "sample.services",
+    "sample.repositories",
+    "sample.models",
+]
+
+[[tool.importlinter.contracts]]
+name = "禁反向依赖：repositories/models/core 不得依赖 services/api"
+type = "forbidden"
+source_modules = ["sample.repositories", "sample.models", "sample.core"]
+forbidden_modules = ["sample.services", "sample.api"]
+
+# 说明：`layers` 契约只保证"上层可引用下层"，**不拦越层**（routers 直接 import repositories/db 也合法），
+# 故必须另加下面的 forbidden 契约。装配根 sample.api.deps 允许依赖 repositories（它是唯一装配点），
+# 因此 source 精确到 sample.api.routers。
+[[tool.importlinter.contracts]]
+name = "禁越层：api 路由不得直接依赖 repositories/models/db"
+type = "forbidden"
+source_modules = ["sample.api.routers"]
+forbidden_modules = ["sample.repositories", "sample.models", "sample.db"]
+# 只看直接导入：经 deps（装配根）或 service 的传递依赖是该架构的正常路径。
+allow_indirect_imports = true
+
+# 同层横向互依赖（防调用环）：import-linter 只能枚举，新增同级模块时必须同步加入本契约。
+[[tool.importlinter.contracts]]
+name = "禁同层横向：api/routers 下模块互不依赖"
+type = "independence"
+modules = ["sample.api.routers.orders", "sample.api.routers.health"]
+
