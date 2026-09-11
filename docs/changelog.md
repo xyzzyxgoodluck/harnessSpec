@@ -2,7 +2,20 @@
 
 > 本仓库规范/文档的版本历史统一登记于此（根 AGENTS.md 不再内嵌长历史）。登记口径：对规范/文档有实质影响的改动追加一行，格式 `vX.Y —— 说明（涉及文件）`。
 
-## v3.4（当前）
+## v3.5（当前）
+
+**"根据类型规范生成项目实例"落地：占位符契约 + 生成器 + 机器判据**
+
+- **问题（先量后改）**：类型规范里的占位符此前**没有清单**——`springboot/AGENTS.md` 21 种、全类型（含 `docs/**`）171 种 / 257 次，`python-fastapi` 202 种 / 297 次；既没有分类、默认值、校验规则，也没有"是否必答"。结果是"生成项目实例"只能靠人肉复制 + 逐个搜索替换，而其中绝大多数（`docs/**` 的写作示例值）**根本不该被替换**——"把占位符全替换掉"本身是错的做法。
+- **新增 `<类型>/placeholders.json`（占位符契约，`authoring-types` §7 为唯一权威）**：按五类区别对待——`instance`（必答，须有 `regex`、**不得有 `default`**，禁止静默填示例值）、`choice`（必答，取值须在 `options` 内）、`domain`（未答用 `default` 且**在待办中留痕**）、`conditional`（**不替换**，进待办：保留则填值、不适用则删行删章）、`example`（**不替换**，按文件统计示例残留）。字段含 `key/category/required/desc/example/regex/options/default/path/scope`。
+- **模板归一化**（否则长说明无法作为 key 登记）：`{{一句话：…例："…"}}` → `{{项目一句话}}`；`{{17 | 21 | 25 LTS，以 pom 为准}}` → `{{Java版本}}`；`{{以 pom parent 为准；Boot 3 用 … 兼容}}` → `{{SpringBoot版本}}`（内嵌的 MP 兼容提示已在 `CODING_STANDARDS` §4 与 `ARCHITECTURE` §2）；`{{8.x}}` → `{{MySQL版本}}`；`{{REST API 服务 | …}}` → `{{项目形态}}`（两类型）；`{{8080}}` / `{{8000}}` → `{{端口}}`（同一概念曾有两个 key）；python 目录树里 `{{运维与生成脚本…}}` 改为普通注释。
+- **修掉 4 处嵌套占位符**（双花括号内部再出现双花括号，会使契约无法解析）：两个 `docs/product-specs/TEMPLATE.md` 的「迁移脚本」行与「MQ 事件」行、python `docs/generated/index.md` 两行。
+- **`scripts/validate-type.ps1` 新增机器判据**：检查 **2b**（占位符不得嵌套，FAIL）、检查 **9**（契约 ↔ `AGENTS.md` 双向一致：未登记占位符 / 孤儿条目 / category 字段约束 / `instance` 无 default / `choice` 有 options / `path` 形态，全部 FAIL）；新增 `-Mode Type|Instance`（项目实例不是类型交付物，跳过契约检查）与**绝对路径**支持（可校验任意目录下的生成物）。
+- **新增 `scripts/new-project.ps1`（生成器）**：校验答案（必答齐全 + 正则 + 选项，**区分大小写**）→ 复制交付物（`AGENTS.md` + `docs/**`，不含 `README.md` 与 `examples/`）→ 按契约替换 → 残留扫描（`AGENTS.md` 出现未登记占位符即失败；`docs/**` 范本示例按文件统计并如实报告）→ 产出 `docs/exec-plans/active/<日期>-实例化待办.md`（已替换表 / 待决策项 / 示例残留 / 生成后必做 4 条）并在 `docs/exec-plans/index.md` 登记一行 → 用 `-Mode Instance` 复核生成物，FAIL 即生成失败。
+- **文档同步**：`authoring-types` 新增 **§7**（契约五类、生成流程、边界：不生成代码骨架、不替项目决策、不豁免命令真实性）、§1 工作流第 3 条与 §4 自查清单新增 #20/#21；`meta-spec.md` §3 权威矩阵新增「占位符契约与生成流程」行；`enforcement-map.md` §2.4 新增 3 行（含两处"故意违规即红"实测）；根 `AGENTS.md` §3 树补 `placeholders.json` 与 `new-project.ps1`、§6 新增"落地成项目实例"入口、状态升至 v3.5。
+- **实测证据（2026-09-11）**：① springboot 生成实例 → exit 0、`-Mode Instance` **FAIL=0**（替换 13 项，含 2 项 domain 默认值；残留 conditional 4 种、`docs/**` 范本示例 149 种 / 218 处如实报告）；② python-fastapi 生成实例 → exit 0、**FAIL=0**（替换 7 项）；③ 负例三组全红：缺必答项 → exit 1 并打印可填答案模板、非法取值（`端口=abc`、`Java版本=19`、`基础包=Com.Example.Order`）→ exit 1（实测发现 PowerShell `-match` **不区分大小写**会放过 `Com.Example.Order`，已改 `-cnotmatch`/`-cnotcontains`）、临时插入未登记与嵌套占位符 → 3 条 FAIL + exit 1，还原后复跑 FAIL=0。
+
+## v3.4
 
 **元规范（新增 L1 入口）：把"规范之规范"本身定义清楚**
 

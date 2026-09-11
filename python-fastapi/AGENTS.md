@@ -1,10 +1,10 @@
 # {{项目名}}
 
-{{一句话：这个项目做什么、不做什么。例："订单与库存的 REST API 服务。"}}
+{{项目一句话}}
 
-- 技术栈：Python {{3.12 | 3.13 | 3.14，以 pyproject.toml 的 requires-python 为准}} / **FastAPI**（ASGI，异步） / **Pydantic v2**（含 pydantic-settings） / **SQLAlchemy 2.0**（异步 ORM）+ **Alembic**（迁移） / **PostgreSQL**
+- 技术栈：Python {{Python版本}} / **FastAPI**（ASGI，异步） / **Pydantic v2**（含 pydantic-settings） / **SQLAlchemy 2.0**（异步 ORM）+ **Alembic**（迁移） / **PostgreSQL**
 - 中间件：**Redis**（缓存/{{锁}}/幂等）、**RabbitMQ**（`aio-pika`，消息）；API 文档：**OpenAPI**（FastAPI 内置，`/docs`、`/openapi.json`，仅非生产开启）
-- 依赖与虚拟环境：**uv**（`pyproject.toml` + `uv.lock`；禁 pip / poetry / conda 混用）；形态：{{REST API 服务 | 消息消费者 | 定时任务 | …}}
+- 依赖与虚拟环境：**uv**（`pyproject.toml` + `uv.lock`；禁 pip / poetry / conda 混用）；形态：{{项目形态}}
 
 ## 环境与版本约束
 
@@ -20,9 +20,9 @@
 uv sync --locked                     # 按 uv.lock 创建 .venv 并安装依赖（含 dev 组）
 docker compose up -d                 # 启动 PostgreSQL / Redis / RabbitMQ
 uv run alembic upgrade head          # 应用数据库迁移（DB 先行）
-uv run uvicorn {{包名}}.main:app --reload --port {{8000}}   # 启动开发服务
-curl http://localhost:{{8000}}/healthz
-# OpenAPI 文档（非生产，{{调试开关}} 为真时开放）：http://localhost:{{8000}}/docs
+uv run uvicorn {{包名}}.main:app --reload --port {{端口}}   # 启动开发服务
+curl http://localhost:{{端口}}/healthz
+# OpenAPI 文档（非生产，{{调试开关}} 为真时开放）：http://localhost:{{端口}}/docs
 uv run pytest -q                     # 全部测试
 ```
 
@@ -36,7 +36,7 @@ uv run pytest -q                     # 全部测试
 | 校验锁定文件 | `uv lock --check` | `pyproject.toml` 与 `uv.lock` 不一致即失败 |
 | 添加运行时依赖 | `uv add {{httpx}}` | 同时更新 `pyproject.toml` 与 `uv.lock` |
 | 添加开发依赖 | `uv add --dev {{pytest-cov}}` | 落入 `[dependency-groups] dev` |
-| 启动开发服务 | `uv run uvicorn {{包名}}.main:app --reload --port {{8000}}` | :{{端口}}；生产去掉 `--reload`，用 `--workers {{N}}` |
+| 启动开发服务 | `uv run uvicorn {{包名}}.main:app --reload --port {{端口}}` | :{{端口}}；生产去掉 `--reload`，用 `--workers {{N}}` |
 | 全部测试 | `uv run pytest -q` | 单元 + 接口测试，不依赖真实中间件 |
 | 单个测试 | `uv run pytest tests/{{test_orders_api.py}}::{{test_create_order_returns_201}}` | 精确定位失败用例 |
 | 覆盖率 | `uv run pytest -q --cov={{包名}} --cov-report=term-missing` | 需先 `uv add --dev pytest-cov` |
@@ -77,7 +77,7 @@ uv run pytest -q                     # 全部测试
     core/                 # config（Settings）/ errors（ErrorCode）/ logging（traceId）/ cache（key）/ mq（拓扑）
     db/                   # 引擎、会话工厂、Base
   tests/                  # pytest：conftest.py 夹具 + fakes.py 内存假实现
-  scripts/                # {{运维与生成脚本；质量门单一入口放在此处，如 gate.py}}
+  scripts/                # 运维与生成脚本（质量门单一入口放此处，如 gate.py）
   CHANGELOG.md            # 对外版本变更史（Keep a Changelog；首个对外发布时建立，与 docs/design-docs 分工：变更 vs 决策）
   docs/                   # 知识库：固定组成部分（★=必建目录；括号内为内容触发器）
     CODING_STANDARDS.md   # ★ 编码规范（本文件全部"细则"的唯一权威）

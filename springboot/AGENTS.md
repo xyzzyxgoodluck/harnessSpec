@@ -1,10 +1,10 @@
 # {{项目名}}
 
-{{一句话：这个项目做什么、不做什么。例："订单与库存的 REST API 服务。"}}
+{{项目一句话}}
 
-- 技术栈：Java {{17 | 21 | 25 LTS，以 pom 为准}} / Spring Boot {{以 pom parent 为准；Boot 3 用 `mybatis-plus-spring-boot3-starter`，升 Boot 4 前先核对 MyBatis-Plus 兼容}} / **MyBatis-Plus** / **MySQL** {{8.x}}
+- 技术栈：Java {{Java版本}} / Spring Boot {{SpringBoot版本}} / **MyBatis-Plus** / **MySQL** {{MySQL版本}}
 - 中间件：**Redis**（缓存/{{锁}}）、**RabbitMQ**（消息）；API 文档：**Swagger UI**（springdoc，`/swagger-ui.html`）；依赖管理：**Maven**（`./mvnw`，Windows 用 `mvnw.cmd`）
-- 形态：{{REST API 服务 | 批处理 | 消息消费者 | …}}
+- 形态：{{项目形态}}
 
 ## 环境与版本约束
 
@@ -17,7 +17,7 @@
 ```bash
 docker compose up -d                 # 启动 MySQL / Redis / RabbitMQ（以下均在项目根执行）
 ./mvnw spring-boot:run               # 启动应用（Swagger UI：/swagger-ui.html）
-curl http://localhost:{{8080}}/actuator/health
+curl http://localhost:{{端口}}/actuator/health
 ./mvnw test                          # 全部测试（集成测试需本机 Docker）
 ```
 

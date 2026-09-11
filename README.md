@@ -15,6 +15,39 @@
 
 > 环境安装类内容（装 JDK/Docker 等）由你项目自己的 README/部署文档负责，模板不含这些。
 
+#### 方式 A：用生成器（推荐，契约驱动）
+
+类型规范带一份**占位符契约**（`<类型>/placeholders.json`），生成器据此把 `AGENTS.md` + `docs/**` 落到你的项目根，并把"该填什么、哪些要你决策、哪些是范本示例"整理成一份待办清单：
+
+```bash
+# 1) 准备答案文件（键 = 契约里的 key；缺必答项会直接失败，不会静默填示例值）
+cat > answers.json <<'JSON'
+{
+  "项目名": "订单与库存服务",
+  "项目一句话": "订单与库存的 REST API 服务，不做支付与结算。",
+  "项目根": "order-service",
+  "基础包": "com.example.order",
+  "artifactId": "order-service",
+  "version": "0.1.0-SNAPSHOT",
+  "SpringBoot版本": "3.5.16",
+  "端口": "8080",
+  "Java版本": "17",
+  "MySQL版本": "8.0",
+  "项目形态": "REST API 服务"
+}
+JSON
+
+# 2) 生成（Windows 用 powershell -NoProfile -File），不传 -Answers 则逐项提问
+pwsh -File scripts/new-project.ps1 -TypePath springboot -OutDir /path/to/your-project -Answers answers.json
+
+# 3) 处理生成物里的待办清单（待决策项 + 范本示例占位符）
+#    → /path/to/your-project/docs/exec-plans/active/<日期>-实例化待办.md
+```
+
+生成器会：校验答案（正则 / 选项，区分大小写）→ 复制交付物（不含 `README.md` 与 `examples/`）→ 替换契约内 `instance`/`choice`/`domain` 三类 → 报告残留（`conditional` 待决策、`example` 范本示例）→ 用 `validate-type.ps1 -Mode Instance` 复核生成物，**FAIL 即生成失败**。契约与五类语义见 [docs/authoring-types.md](docs/authoring-types.md) §7。
+
+#### 方式 B：手工复制（不使用生成器时）
+
 以 springboot 类型为例（Linux/macOS；Windows 用 `copy`/`xcopy` 或资源管理器）：
 
 ```bash

@@ -53,6 +53,7 @@ L3 项目实例  真实项目根                           # 由 L2 复制落地
 | 编写流程与交付自查清单 | [`authoring-types.md`](authoring-types.md) §1/§4 | §4 清单逐条带强制者列 |
 | 验证协议（L1–L5） | [`authoring-types.md`](authoring-types.md) §5 | 仅评审 + 类型 `README.md` 证据 |
 | 文档写作、命令与路径书写 | [`writing-standards.md`](writing-standards.md) §1–§3 | 部分 L1′（画线字符 / 占位符 / 链接） |
+| **占位符契约与"生成项目实例"流程** | [`authoring-types.md`](authoring-types.md) §7 | L1 检查 9（契约 ↔ AGENTS.md 双向一致、禁嵌套、path 形态）+ `scripts/new-project.ps1`（生成时复核生成物） |
 | 强制者登记与"仅评审"清单 | [`enforcement-map.md`](enforcement-map.md) | 仅评审（M1 元检查待实现） |
 | 仓库级决策 | [`decisions.md`](decisions.md) | 仅评审 |
 | 版本历史与"当前版本" | [`changelog.md`](changelog.md) | L1′：版本号 ↔ 根 `AGENTS.md` 状态 |

@@ -7,14 +7,20 @@
 #   - 检查项：树形画线字符 / 占位符配平 / 密钥形态启发 / 相对链接存在 / 根 AGENTS.md 必需章节 / 骨架第 1 章「项目概览」的概览块内容判据（authoring-types §2） / CODING_STANDARDS §N 引用 / docs 必建骨架（fixed-docs §1）。
 #   - 宿主：PowerShell 5.1+ 均可（本文件为 UTF-8 with BOM）；Windows 用 `powershell -File`，跨平台/CI 用 `pwsh -File`。
 #   - 跨平台：脚本内路径一律用 '/' 分隔符（Windows 与 Linux 通用）。
+#   - 用法补充：`-Mode Type`（默认，校验类型交付物，含占位符契约）/ `-Mode Instance`（校验生成出的项目实例：跳过占位符契约，其余同）。
 #   - 退出码：0 = 无 FAIL；1 = 存在 FAIL。WARN 需人工确认，不计失败。
 param(
     [Parameter(Mandatory = $true)][string]$TypePath,
+    [ValidateSet('Type', 'Instance')][string]$Mode = 'Type',
     [string[]]$RequiredHeadings = @('## 快速开始', '## 常用命令', '## 测试与质量门', '## 约束、禁区与陷阱')
 )
 
 $root = (Split-Path $PSScriptRoot -Parent)
-$dir = (Resolve-Path -LiteralPath (Join-Path $root $TypePath) -ErrorAction Stop).Path
+if ([System.IO.Path]::IsPathRooted($TypePath)) {
+    $dir = (Resolve-Path -LiteralPath $TypePath -ErrorAction Stop).Path
+} else {
+    $dir = (Resolve-Path -LiteralPath (Join-Path $root $TypePath) -ErrorAction Stop).Path
+}
 $mdFiles = Get-ChildItem -LiteralPath $dir -Recurse -File -Filter *.md |
     Where-Object { $_.FullName -notmatch '[\\/](target|\.venv|venv|node_modules|__pycache__|\.mvn|\.git|\.mypy_cache|\.ruff_cache|\.pytest_cache)[\\/]' }
 $fail = 0; $warn = 0; $issues = [System.Collections.Generic.List[string]]::new()
@@ -47,6 +53,15 @@ foreach ($f in $mdFiles) {
     $close = ([regex]::Matches($text, '\}\}')).Count
     if ($open -ne $close) {
         $issues.Add("FAIL  [$rel] 占位符不配平: {{=$open  }}=$close")
+        $fail++
+    }
+
+    # 2b) 占位符不得嵌套（{{ }} 内部再出现 {{）——嵌套会让占位符契约无法解析（authoring-types §7）
+    foreach ($nm in [regex]::Matches($text, '\{\{[^}]*\{\{')) {
+        $nline = ($text.Substring(0, $nm.Index) -split "`r?`n").Count
+        $snip = $nm.Value.Replace("`n", ' ').Replace("`r", ' ')
+        if ($snip.Length -gt 60) { $snip = $snip.Substring(0, 60) + '…' }
+        $issues.Add("FAIL  [$rel] 占位符嵌套（第 $nline 行）：$snip —— 内层改为普通文字或去掉外层 {{ }}")
         $fail++
     }
 
@@ -196,6 +211,82 @@ foreach ($cf in $cfgFiles) {
     foreach ($dm in [regex]::Matches($ctext, '\$\{[A-Z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|KEY)[A-Z0-9_]*:[^}]+\}')) {
         $issues.Add("WARN  [$crel] 密钥类环境变量带默认值（确认非真实口令/生产禁用）: " + $dm.Value)
         $warn++
+    }
+}
+
+# 9) 占位符契约（authoring-types §7）：placeholders.json ↔ AGENTS.md 双向一致
+#    为什么强制：没有契约就没有"生成项目实例"这回事——占位符会散落、重复、没人知道该填什么。
+$phPath = Join-Path $dir 'placeholders.json'
+$agentsPath = Join-Path $dir 'AGENTS.md'
+if ($Mode -eq 'Instance' -or $dir -match '[\\/]examples[\\/]') {
+    # 项目实例与 examples/ 样例都不是"类型交付物"：没有 placeholders.json，契约检查不适用（其余检查照跑；类型自身的运行已覆盖契约）
+    Write-Verbose '跳过占位符契约检查（Mode=Instance 或 examples/ 样例）'
+} elseif (-not (Test-Path -LiteralPath $phPath)) {
+    $issues.Add('FAIL  [placeholders.json] 缺少占位符契约（authoring-types §7 要求每个类型提供；格式见范例 springboot/placeholders.json）')
+    $fail++
+} elseif (-not (Test-Path -LiteralPath $agentsPath)) {
+    $issues.Add('FAIL  [placeholders.json] 类型根缺 AGENTS.md，无法做双向一致校验')
+    $fail++
+} else {
+    $validCats = @('instance', 'choice', 'conditional', 'example', 'domain')
+    $ph = $null
+    try {
+        $ph = [System.IO.File]::ReadAllText($phPath) | ConvertFrom-Json
+    } catch {
+        $issues.Add('FAIL  [placeholders.json] 不是合法 JSON：' + $_.Exception.Message)
+        $fail++
+    }
+    if ($ph) {
+        $declared = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($p in $ph.placeholders) {
+            if ([string]::IsNullOrWhiteSpace($p.key)) {
+                $issues.Add('FAIL  [placeholders.json] 存在空 key 的条目'); $fail++; continue
+            }
+            [void]$declared.Add([string]$p.key)
+            if ($validCats -notcontains $p.category) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」category 非法（须为 " + ($validCats -join '/') + "）：$($p.category)"); $fail++
+            }
+            if ([string]::IsNullOrWhiteSpace($p.desc)) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」缺 desc"); $fail++
+            }
+            if ($p.category -eq 'instance') {
+                if ($p.required -ne $true) { $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 instance，required 必须为 true"); $fail++ }
+                if ([string]::IsNullOrWhiteSpace($p.regex)) { $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 instance，必须给 regex"); $fail++ }
+                if ($null -ne $p.default) { $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 instance，不得有 default（禁止静默填充）"); $fail++ }
+            }
+            if ($p.category -eq 'choice' -and -not $p.options) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 choice，必须给 options"); $fail++
+            }
+            if (($p.category -eq 'example' -or $p.category -eq 'conditional') -and $p.required -eq $true) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 $($p.category)，required 不得为 true"); $fail++
+            }
+            if ($p.category -eq 'domain' -and $null -eq $p.default) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」是 domain，必须给 default（未答时用默认值，生成器须记录已用默认）"); $fail++
+            }
+        }
+
+        $agentsText = [System.IO.File]::ReadAllText($agentsPath)
+        $inAgents = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($m in [regex]::Matches($agentsText, '\{\{([^}]*)\}\}')) {
+            $k = $m.Groups[1].Value.Trim()
+            [void]$inAgents.Add($k)
+            if (-not $declared.Contains($k)) {
+                $issues.Add("FAIL  [AGENTS.md] 占位符未在 placeholders.json 登记：{{$k}}（未登记则无人知道该填什么、是否必填）")
+                $fail++
+            }
+        }
+        foreach ($p in $ph.placeholders) {
+            if (-not $p.scope -or ($p.scope -notcontains 'AGENTS.md')) { continue }
+            $ek = [regex]::Escape([string]$p.key)
+            if (-not $inAgents.Contains([string]$p.key)) {
+                $issues.Add("FAIL  [placeholders.json] 孤儿条目：声明 scope 含 AGENTS.md，但 AGENTS.md 中已无 {{$($p.key)}}（改名/删除后须同步契约）")
+                $fail++
+            }
+            if ($p.path -eq $true -and $agentsText -notmatch ('[\\/]\{\{' + $ek + '\}\}')) {
+                $issues.Add("FAIL  [placeholders.json] 「$($p.key)」标了 path=true，但 AGENTS.md 未以路径形态出现（如 src/main/java/{{…}}）")
+                $fail++
+            }
+        }
     }
 }
 

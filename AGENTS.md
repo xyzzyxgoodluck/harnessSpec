@@ -1,6 +1,6 @@
 # AiCodingSpec
 
-> 状态：v3.4（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
+> 状态：v3.5（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
 >
 > 一句话定位：本项目是**「各类项目 AGENTS.md 规范」的汇编项目**——让每种常见项目类型都有一份可直接复制、按项目微调的 `AGENTS.md`（写给 AI 编码代理看、人也应能读懂的"项目操作手册"），使真实项目"开箱即有合格 AGENTS.md"。
 >
@@ -25,7 +25,7 @@
 | [`docs/harness-principles.md`](docs/harness-principles.md) | Harness Engineering 工作方式准则（OpenAI/DSH 摘编） | 想了解本仓库为何这样组织 |
 | [`docs/enforcement-map.md`](docs/enforcement-map.md) | **不变量 → 强制手段映射**：哪些「必须」已被工具/测试强制、哪些仅靠人读 | 新增/修订「必须」规则、评审"这条规则拦得住吗" |
 | [`docs/decisions.md`](docs/decisions.md) | 本仓库自身的架构决策记录（ADR） | 想知道某条仓库级约定为何这样定 |
-| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.4） | 查某条规则何时引入 |
+| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.5） | 查某条规则何时引入 |
 | `springboot/` 及各类型目录 | 类型规范交付物（交付结构见 §3.1） | 复用/复制到真实项目 |
 
 ## 3. 目录约定与结构
@@ -37,9 +37,11 @@ AiCodingSpec/
   docs/                         # 本仓库的规范正文（见 §2 地图）
   scripts/validate-type.ps1     # 类型静态校验（L1）：红线/结构/链接/占位符/docs 必建骨架检查
   scripts/validate-repo.ps1     # 仓库级静态校验（L1'）：根文档链接与 §N 引用/登记表↔目录/范本↔样例同源/版本↔changelog
+  scripts/new-project.ps1       # 项目实例生成器：读 <类型>/placeholders.json → 校验答案 → 复制交付物 → 替换 → 出待办 → 复核（authoring-types §7）
   .github/workflows/validate.yml # CI：跑上述两层校验 + 各类型样例的质量门（与本地同一条命令）
   springboot/                   # 一种项目类型 = 一个文件夹（小写 kebab-case）
     AGENTS.md                   # 该类型的规范/模板（交付物）
+    placeholders.json           # 占位符契约（authoring-types §7）：模板里每个 {{key}} 的类别/校验/默认值，L1 双向一致
     README.md                   # 类型说明/适用范围/版本对照/验证状态（可选辅助物）
     docs/                       # 类型交付物范本：CODING_STANDARDS / ARCHITECTURE + 五项目录（必建）
     examples/sample-project/        # L3 冒烟样例项目（start.spring.io 生成）
@@ -101,6 +103,7 @@ AiCodingSpec/
 
 ## 6. 我该从哪开始
 
+- **把某类型落地成真实项目实例** → `scripts/new-project.ps1`（读 `<类型>/placeholders.json` 契约，校验答案 → 复制 `AGENTS.md` + `docs/**` → 替换 → 出待办 → 复核；契约与类别见 [`docs/authoring-types.md`](docs/authoring-types.md) §7）。
 - **新增一个类型** → 按 [`docs/authoring-types.md`](docs/authoring-types.md) 走：立项 → 起草（§2 骨架 + §3 项目文件夹结构）→ 质检（§4 自查清单）+ 验证（§5 L1–L5，先跑 `scripts/validate-type.ps1`）→ 登记 §4 → changelog。CI（`.github/workflows/validate.yml`）会对 push/PR 跑同样两层校验与各类型样例质量门。
 - **新增/修订一条「必须」规则** → 在 [`docs/enforcement-map.md`](docs/enforcement-map.md) 登记它的强制者（工具/测试），无法机器化的显式标注「仅评审」；假绿（只告警不拦构建）不算强制。
 - **修订现有类型**（如 springboot）→ 直接改 `<类型>/AGENTS.md` 与 `<类型>/docs/*`（范本），同步登记表/changelog；命令核实到官方现状。

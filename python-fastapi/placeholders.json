@@ -1,0 +1,269 @@
+{
+  "type": "python-fastapi",
+  "version": 1,
+  "notes": "占位符契约：模板里出现的每个 {{key}} 必须在 placeholders 中登记（L1 强制）。category 语义见 docs/authoring-types.md §7。",
+  "placeholders": [
+    {
+      "key": "项目名",
+      "category": "instance",
+      "required": true,
+      "desc": "项目/服务名称，写入 H1 标题",
+      "example": "订单与库存服务",
+      "regex": "^\\S.{1,38}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目一句话",
+      "category": "instance",
+      "required": true,
+      "desc": "一句话职责：这个项目做什么、不做什么",
+      "example": "订单与库存的 REST API 服务。",
+      "regex": "^\\S.{9,78}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目根",
+      "category": "instance",
+      "required": true,
+      "desc": "项目根目录名（目录树上显示的名字）",
+      "example": "order-service",
+      "regex": "^[a-z0-9][a-z0-9._-]{1,48}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "包名",
+      "category": "instance",
+      "required": true,
+      "desc": "Python 包名（小写下划线），决定 src/ 下的目录名与 pyproject 的 project 名",
+      "example": "order_service",
+      "regex": "^[a-z][a-z0-9_]{1,40}$",
+      "default": null,
+      "path": true,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "端口",
+      "category": "instance",
+      "required": true,
+      "desc": "本地 HTTP 端口（uvicorn --port）",
+      "example": "8000",
+      "regex": "^\\d{2,5}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "Python版本",
+      "category": "choice",
+      "required": true,
+      "desc": "解释器版本，须与 pyproject.toml 的 requires-python 一致（单一来源在 pyproject）",
+      "example": "3.12",
+      "options": ["3.12", "3.13", "3.14"],
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目形态",
+      "category": "choice",
+      "required": true,
+      "desc": "项目形态；选「消息消费者」或「定时任务」时删除 REST 相关示例章节（OpenAPI、curl 冒烟）",
+      "example": "REST API 服务",
+      "options": ["REST API 服务", "消息消费者", "定时任务"],
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "锁",
+      "category": "conditional",
+      "required": false,
+      "desc": "Redis 是否用于分布式锁；不适用时删除 `/{{锁}}` 片段（含前面的斜杠）",
+      "example": "锁",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "调试开关",
+      "category": "conditional",
+      "required": false,
+      "desc": "非生产开放 /docs 的开关名（写入 Settings，如 settings.debug）；生产必须关闭",
+      "example": "settings.debug",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "质量门入口命令",
+      "category": "conditional",
+      "required": false,
+      "desc": "必须提供单一入口命令（如 `uv run python scripts/gate.py`，把五项检查按序封装、失败即停）+ 入口脚本；未落地则不得声称质量门已成立",
+      "example": "uv run python scripts/gate.py",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "（按需保留）",
+      "category": "conditional",
+      "required": false,
+      "desc": "「工作流与发布」章为可选项：保留则删除该占位符并填内容，不适用则删除整章",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "feature/* → main",
+      "category": "conditional",
+      "required": false,
+      "desc": "分支模型（按团队实际替换或删除该行）",
+      "example": "feature/* → main",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "SemVer",
+      "category": "conditional",
+      "required": false,
+      "desc": "版本策略（按团队实际替换或删除）",
+      "example": "SemVer",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "httpx",
+      "category": "example",
+      "required": false,
+      "desc": "示例：`uv add` 的命令示例依赖名",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "pytest-cov",
+      "category": "example",
+      "required": false,
+      "desc": "示例：`uv add --dev` 的命令示例依赖名",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "N",
+      "category": "example",
+      "required": false,
+      "desc": "示例：uvicorn --workers 的并发数",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "test_orders_api.py",
+      "category": "example",
+      "required": false,
+      "desc": "示例：单个测试命令里的测试文件",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "test_create_order_returns_201",
+      "category": "example",
+      "required": false,
+      "desc": "示例：单个测试命令里的用例名",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "描述",
+      "category": "example",
+      "required": false,
+      "desc": "示例：迁移脚本描述（写新脚本时替换）",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "revision",
+      "category": "example",
+      "required": false,
+      "desc": "示例：迁移脚本版本号（写新脚本时替换）",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "参数",
+      "category": "example",
+      "required": false,
+      "desc": "示例：代码生成命令的参数",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "代码生成命令",
+      "category": "example",
+      "required": false,
+      "desc": "示例/可选：代码生成命令；未用则删除该行",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "域",
+      "category": "example",
+      "required": false,
+      "desc": "示例：Redis key 布局中的业务域段",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "对象",
+      "category": "example",
+      "required": false,
+      "desc": "示例：Redis key 布局中的对象段",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "标识",
+      "category": "example",
+      "required": false,
+      "desc": "示例：Redis key 布局中的标识段",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "模块",
+      "category": "example",
+      "required": false,
+      "desc": "示例：测试文件命名 `test_{{模块}}.py`",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "行为",
+      "category": "example",
+      "required": false,
+      "desc": "示例：测试函数命名 `test_{{行为}}`",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    }
+  ]
+}

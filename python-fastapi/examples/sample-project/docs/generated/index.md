@@ -15,8 +15,8 @@
 
 | 生成物 | 生成命令（真实可执行） | 输入来源（单一事实源） | 生成时间 | 备注 |
 | --- | --- | --- | --- | --- |
-| {{openapi.json}} | {{如 `uv run python -c "import json;from {{包名}}.main import app;print(json.dumps(app.openapi(),ensure_ascii=False))" > docs/generated/openapi.json`}} | {{src/{{包名}}/api/routers/（Pydantic schema + 路由定义）}} | {{2026-09-01}} | {{只读，勿手改}} |
-| {{models_generated.py}} | {{如 `uv run datamodel-codegen --input docs/generated/openapi.json --output src/{{包名}}/schemas/generated`}} | {{docs/generated/openapi.json}} | {{2026-09-01}} | {{生成目录已从 lint/type 检查排除，见 CODING_STANDARDS §14}} |
+| {{产物文件名，如 openapi.json}} | {{生成命令（写成项目里真实可执行的一条，含包名与输出路径）}} | {{输入来源（单一事实源），如 src/包名/api/routers/}} | {{首次登记日期，如 2026-09-01}} | {{只读，勿手改}} |
+| {{产物文件名，如 models_generated.py}} | {{生成命令（如 uv run datamodel-codegen …）}} | {{输入来源，如 docs/generated/openapi.json}} | {{首次登记日期}} | {{生成目录已从 lint/type 检查排除，见 CODING_STANDARDS §14}} |
 
 ## 规则（必须）
 

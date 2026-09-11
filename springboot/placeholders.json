@@ -1,0 +1,213 @@
+{
+  "type": "springboot",
+  "version": 1,
+  "notes": "占位符契约：模板里出现的每个 {{key}} 必须在 placeholders 中登记（L1 强制）。category 语义见 docs/authoring-types.md §7。",
+  "placeholders": [
+    {
+      "key": "项目名",
+      "category": "instance",
+      "required": true,
+      "desc": "项目/服务名称，写入 H1 标题",
+      "example": "订单与库存服务",
+      "regex": "^\\S.{1,38}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目一句话",
+      "category": "instance",
+      "required": true,
+      "desc": "一句话职责：这个项目做什么、不做什么",
+      "example": "订单与库存的 REST API 服务。",
+      "regex": "^\\S.{9,78}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目根",
+      "category": "instance",
+      "required": true,
+      "desc": "项目根目录名（目录树上显示的名字）",
+      "example": "order-service",
+      "regex": "^[a-z0-9][a-z0-9._-]{1,48}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "基础包",
+      "category": "instance",
+      "required": true,
+      "desc": "Java 基础包名（点分小写），同时决定 src/main/java 下的目录层级",
+      "example": "com.example.order",
+      "regex": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)+$",
+      "default": null,
+      "path": true,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "artifactId",
+      "category": "instance",
+      "required": true,
+      "desc": "Maven artifactId（与 pom.xml 一致）",
+      "example": "order-service",
+      "regex": "^[a-z][a-z0-9-]{1,40}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "version",
+      "category": "instance",
+      "required": true,
+      "desc": "项目版本号（SemVer，与 pom.xml 一致）",
+      "example": "0.0.1-SNAPSHOT",
+      "regex": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9.]+)?$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "SpringBoot版本",
+      "category": "instance",
+      "required": true,
+      "desc": "Spring Boot 版本，与 pom.xml 的 parent 一致（Boot 3.5.x 为兼容成熟线）",
+      "example": "3.5.16",
+      "regex": "^\\d+\\.\\d+(\\.\\d+)?$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "端口",
+      "category": "instance",
+      "required": true,
+      "desc": "本地 HTTP 端口（SERVER_PORT 默认值）",
+      "example": "8080",
+      "regex": "^\\d{2,5}$",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "Java版本",
+      "category": "choice",
+      "required": true,
+      "desc": "Java LTS 版本，须与 pom.xml 的 <java.version> 一致（单一来源在 pom）",
+      "example": "17",
+      "options": ["17", "21", "25"],
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "MySQL版本",
+      "category": "choice",
+      "required": true,
+      "desc": "MySQL 大版本（与 docker-compose / 生产实例一致）",
+      "example": "8.0",
+      "options": ["8.0", "8.4"],
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "项目形态",
+      "category": "choice",
+      "required": true,
+      "desc": "项目形态；选「消息消费者」时删除 REST 相关示例章节（API 文档、curl 冒烟）",
+      "example": "REST API 服务",
+      "options": ["REST API 服务", "批处理", "消息消费者"],
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "t_dict_type",
+      "category": "domain",
+      "required": false,
+      "desc": "字典类型表名（按全库表命名调整，默认与范本一致）",
+      "example": "t_dict_type",
+      "default": "t_dict_type",
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "t_dict_item",
+      "category": "domain",
+      "required": false,
+      "desc": "字典项表名（按全库表命名调整，默认与范本一致）",
+      "example": "t_dict_item",
+      "default": "t_dict_item",
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "锁",
+      "category": "conditional",
+      "required": false,
+      "desc": "Redis 是否用于分布式锁；不适用时删除 `/{{锁}}` 片段（含前面的斜杠）",
+      "example": "锁",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "（按需保留）",
+      "category": "conditional",
+      "required": false,
+      "desc": "「工作流与发布」章为可选项：保留则删除该占位符并填内容，不适用则删除整章",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "feature/* → main",
+      "category": "conditional",
+      "required": false,
+      "desc": "分支模型（按团队实际替换或删除该行）",
+      "example": "feature/* → main",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "发布步骤",
+      "category": "conditional",
+      "required": false,
+      "desc": "发布步骤（按团队实际替换或删除该行）",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "XxxServiceTest",
+      "category": "example",
+      "required": false,
+      "desc": "示例类名：单个测试命令里的类名，按需替换",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "n",
+      "category": "example",
+      "required": false,
+      "desc": "示例：迁移脚本序号（写新脚本时替换）",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    },
+    {
+      "key": "描述",
+      "category": "example",
+      "required": false,
+      "desc": "示例：迁移脚本描述（写新脚本时替换）",
+      "default": null,
+      "path": false,
+      "scope": ["AGENTS.md"]
+    }
+  ]
+}
