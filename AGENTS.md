@@ -1,6 +1,6 @@
 # AiCodingSpec
 
-> 状态：v3.2（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
+> 状态：v3.3（精简地图版）｜变更历史见 [`docs/changelog.md`](docs/changelog.md)
 >
 > 一句话定位：本项目是**「各类项目 AGENTS.md 规范」的汇编项目**——让每种常见项目类型都有一份可直接复制、按项目微调的 `AGENTS.md`（写给 AI 编码代理看、人也应能读懂的"项目操作手册"），使真实项目"开箱即有合格 AGENTS.md"。
 >
@@ -24,7 +24,7 @@
 | [`docs/harness-principles.md`](docs/harness-principles.md) | Harness Engineering 工作方式准则（OpenAI/DSH 摘编） | 想了解本仓库为何这样组织 |
 | [`docs/enforcement-map.md`](docs/enforcement-map.md) | **不变量 → 强制手段映射**：哪些「必须」已被工具/测试强制、哪些仅靠人读 | 新增/修订「必须」规则、评审"这条规则拦得住吗" |
 | [`docs/decisions.md`](docs/decisions.md) | 本仓库自身的架构决策记录（ADR） | 想知道某条仓库级约定为何这样定 |
-| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.2） | 查某条规则何时引入 |
+| [`docs/changelog.md`](docs/changelog.md) | 规范版本历史（v1.0–v3.3） | 查某条规则何时引入 |
 | `springboot/` 及各类型目录 | 类型规范交付物（交付结构见 §3.1） | 复用/复制到真实项目 |
 
 ## 3. 目录约定与结构
@@ -111,3 +111,4 @@ AiCodingSpec/
 
 - 评审：内容宁短勿水；任何与"当前主流脚手架/官方现状"不符的命令都是 bug，与坏代码同等对待。
 - 版本：实质改动在 [`docs/changelog.md`](docs/changelog.md) 追加一行；根 AGENTS.md 只维护本"地图"内容。
+- 规范层（本仓库自身）的**机器判据清单**与**已知违反**登记在 [`docs/enforcement-map.md`](docs/enforcement-map.md) §2.4 与 §3；本仓库作为"规范汇编"对自身固定组成部分的**豁免范围与理由**见 [`docs/decisions.md`](docs/decisions.md) ADR-005（下游不得照抄本仓库根布局）。

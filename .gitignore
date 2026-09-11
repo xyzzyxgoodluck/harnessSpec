@@ -14,5 +14,6 @@ target/
 .DS_Store
 Thumbs.db
 
-# 临时目录与临时产物（脚本生成的中间物）
-.tmp-*/
+# 临时目录与临时产物（脚本生成的中间物；`.tmp-*` 同时匹配目录与文件——
+# 只写 `.tmp-*/` 时文件不会被忽略，实测 `.tmp-audit-check.txt` 仍会进 git）
+.tmp-*

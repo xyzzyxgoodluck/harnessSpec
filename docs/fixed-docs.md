@@ -136,7 +136,7 @@ docs/
 
 **三条硬要求（必须内嵌）**：
 
-1. **单一入口**：质量门在模板里只以**一个命令**出现——占位符 `{{质量门入口命令}}`；范例：`springboot` = `./mvnw clean verify`，`python-fastapi` = 形如 `uv run python scripts/gate.py`（把五项检查按序封装）。禁止写成一串 `&&` 连接的检查清单（违反 `writing-standards.md` §2.2"一个动作一条命令"），也禁止 AGENTS 与 CI 各维护一份不同的命令。
+1. **单一入口**：质量门在模板里只以**一个命令**出现——占位符 `{{质量门入口命令}}`；范例：`springboot` = `./mvnw clean verify`，`python-fastapi` = 形如 `uv run python scripts/gate.py`（把五项检查按序封装）。**样例必须真实提供该入口脚本**（如 `examples/<类型>/scripts/gate.py`）；样例尚未提供时，类型 `README.md`「验证状态」必须把它列入"未做"、**不得**声称 L3（动态冒烟）已执行，并在 `enforcement-map.md` 登记为已知缺口——占位符本身不算"已提供入口"。禁止写成一串 `&&` 连接的检查清单（违反 `writing-standards.md` §2.2"一个动作一条命令"），也禁止 AGENTS 与 CI 各维护一份不同的命令。
 2. **失败即停、真拦构建**：入口按序执行、首次失败即停止并返回非 0；**只告警不拦构建＝假绿**（实测：Checkstyle 默认 `violationSeverity=error` 会让 `severity=warning` 的规则形同虚设）。假绿不算强制，模板中**不得声称"已强制"**。
 3. **整条真跑 + 故意违规即红**：类型发布前质量门必须**整条真跑过一次**（不是只跑 `compile` 或部分检查项），并**故意制造一次违规**证明确实会红、还原后复跑恢复绿；两次输出记入类型 `README.md`「验证状态」。
 

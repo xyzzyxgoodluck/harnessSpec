@@ -4,7 +4,7 @@
 #   pwsh -File scripts/validate-type.ps1 -TypePath springboot -RequiredHeadings '## 快速开始','## 常用命令'
 # 说明：
 #   - L1 只做"机器可判"的静态检查；语义/命令真实性请配合 L2 自查清单、L3 样例项目冒烟、L4 评审（见 docs/authoring-types.md §5）。
-#   - 检查项：树形画线字符 / 占位符配平 / 密钥形态启发 / 相对链接存在 / 根 AGENTS.md 必需章节 / CODING_STANDARDS §N 引用 / docs 必建骨架（fixed-docs §1）。
+#   - 检查项：树形画线字符 / 占位符配平 / 密钥形态启发 / 相对链接存在 / 根 AGENTS.md 必需章节 / 骨架第 1 章「项目概览」的概览块内容判据（authoring-types §2） / CODING_STANDARDS §N 引用 / docs 必建骨架（fixed-docs §1）。
 #   - 宿主：PowerShell 5.1+ 均可（本文件为 UTF-8 with BOM）；Windows 用 `powershell -File`，跨平台/CI 用 `pwsh -File`。
 #   - 跨平台：脚本内路径一律用 '/' 分隔符（Windows 与 Linux 通用）。
 #   - 退出码：0 = 无 FAIL；1 = 存在 FAIL。WARN 需人工确认，不计失败。
@@ -91,6 +91,45 @@ foreach ($f in $mdFiles) {
             }
         }
     }
+    # 5b) 骨架第 1 章「项目概览」：判据落在**内容**而非标题（authoring-types §2）
+    #     两种呈现都接受：① H1 之后、首个 '##' 之前的概览块；② '项目概览' 同名（'##'/'###'）章。
+    #     二者之一须满足：非空行 >= 3，且同时含"技术栈"与"形态"两个关键词。
+    #     为什么不用必需标题判据：本章按惯例以 "H1 项目名 + 概览块" 呈现（无 H2），标题匹配天然看不见它。
+    if ($f.Name -eq 'AGENTS.md' -and $f.DirectoryName -eq $dir) {
+        $ls = $text -split "`r?`n"
+        $h1 = -1; $h2 = -1
+        for ($i = 0; $i -lt $ls.Count; $i++) {
+            if ($h1 -lt 0 -and $ls[$i] -match '^#\s+\S') { $h1 = $i; continue }
+            if ($h1 -ge 0 -and $ls[$i] -match '^##\s') { $h2 = $i; break }
+        }
+        $sec = -1; $secEnd = $ls.Count
+        for ($i = 0; $i -lt $ls.Count; $i++) {
+            if ($ls[$i] -match '^#{2,3}\s*(\d+\.\s*)?项目概览\s*$') { $sec = $i + 1; break }
+        }
+        $area = @()
+        if ($sec -ge 0) {
+            for ($i = $sec; $i -lt $ls.Count; $i++) {
+                if ($ls[$i] -match '^#{1,3}\s') { $secEnd = $i; break }
+            }
+            if (($secEnd - 1) -ge $sec) { $area = $ls[$sec..($secEnd - 1)] }
+        } elseif ($h1 -ge 0 -and $h2 -gt ($h1 + 1)) {
+            $area = $ls[($h1 + 1)..($h2 - 1)]
+        }
+        $body = @($area | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $joined = ($body -join "`n")
+        if ($body.Count -lt 3) {
+            $issues.Add("FAIL  [$rel] 骨架第 1 章「项目概览」缺失：H1 后的概览块（或「项目概览」同名章）非空行=$($body.Count) < 3 —— 见 docs/authoring-types.md §2 第 1 章")
+            $fail++
+        } else {
+            foreach ($kw in @('技术栈', '形态')) {
+                if ($joined -notmatch [regex]::Escape($kw)) {
+                    $issues.Add("FAIL  [$rel] 骨架第 1 章「项目概览」缺关键词「$kw」—— 见 docs/authoring-types.md §2 第 1 章内容要点")
+                    $fail++
+                }
+            }
+        }
+    }
+
 }
 
 # 6) AGENTS/README 等对 docs/CODING_STANDARDS.md 的 §N 引用存在性
